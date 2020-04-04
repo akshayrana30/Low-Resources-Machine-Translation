@@ -7,12 +7,23 @@ The Illustrated Transformer (https://jalammar.github.io/illustrated-transformer/
 import tensorflow as tf
 
 
+class Transformer(tf.keras.Model):
+    def __init__(self, voc_size, num_encoders, num_decoders, emb_size, num_head, ff_inner=2048):
+        super(Transformer, self).__init__()
+        # Todo: embedding layer
+        # Todo: position encoding layer
+
+    def call(self):
+        # encoders
+        # decoders
+        # linear layer
+        # softmax
+        pass
+
+
 class TransformerEncoder(tf.keras.Model):
     def __init__(self, emb_size, num_head, ff_inner=2048):
         super(TransformerEncoder, self).__init__()
-        # Todo: embedding layer
-
-        # position encoding layer
 
         # multi-head attention layer
         self.attention = MultiHeadAttention(emb_size, num_head)
@@ -44,9 +55,6 @@ class TransformerEncoder(tf.keras.Model):
 class TransformerDecoder(tf.keras.Model):
     def __init__(self, emb_size, num_head, enc_output_k, enc_output_v, ff_inner=2048):
         super(TransformerDecoder, self).__init__()
-        # Todo: embedding layer
-
-        # position encoding layer
 
         # masked multi-head attention
         self.masked_attention(emb_size, num_head)
@@ -177,7 +185,8 @@ def create_padding_mask(seq):
 
 def create_seq_mask(seq_len):
     # just a simple upper triangle matrix
-    return 1-tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
+    return 1 - tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
+
 
 """
 tf.print(create_seq_mask(5))
