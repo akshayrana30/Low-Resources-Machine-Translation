@@ -10,6 +10,8 @@ import tensorflow as tf
 class TransformerEncoder(tf.keras.Model):
     def __init__(self, emb_size, num_head, ff_inner=2048):
         super(TransformerEncoder, self).__init__()
+        # Todo: embedding layer
+
         # position encoding layer
 
         # multi-head attention layer
@@ -40,11 +42,44 @@ class TransformerEncoder(tf.keras.Model):
 
 
 class TransformerDecoder(tf.keras.Model):
-    def __init__(self):
+    def __init__(self, emb_size, num_head, enc_output_k, enc_output_v, ff_inner=2048):
         super(TransformerDecoder, self).__init__()
+        # Todo: embedding layer
 
-    def call(self):
-        pass
+        # position encoding layer
+
+        # masked multi-head attention
+        self.masked_attention(emb_size, num_head)
+        self.layerNorm_masked = tf.keras.layers.LayerNormalization()
+
+        # encoder-decoder attention
+        self.enc_dec_attention(emb_size, num_head)
+        self.layerNorm_enc_dec = tf.keras.layers.LayerNormalization()
+
+        # position-wise feed-forward neural network layer
+        self.ffnn = FeedForwardNN(ff_inner, emb_size)
+        self.layerNorm_FFNN = tf.keras.layers.LayerNormalization()
+
+        # output from the last layer of encoder
+        self.enc_output_k = enc_output_k
+        self.enc_output_v = enc_output_v
+
+    def call(self, x):
+        tf.print(tf.shape(x))
+        # get the max_length of input
+        max_length = tf.shape(x)[1]
+        seq_mask = create_seq_mask(max_length)
+
+        output_masked = self.masked_attention(x, x, x, seq_mask)
+        output_masked = self.layerNorm_multihead(output_masked + x)
+
+        output_enc_dec = self.self.enc_dec_attention(output_masked, self.enc_output_k, self.enc_output_v)
+        output_enc_dec = self.layerNorm_enc_dec(output_enc_dec + output_masked)
+
+        output = self.ffnn(output_enc_dec)
+        output = self.layerNorm_FFNN(output + output_enc_dec)
+
+        return output
 
 
 class MultiHeadAttention(tf.keras.layers.Layer):
@@ -63,7 +98,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         # Todo: Make sure what is the output dim of Multi-head Attention
         self.WO = tf.keras.layers.Dense(emb_size)
 
-    def call(self, q, k, v):
+    def call(self, q, k, v, mask=None):
         # x => [num_batch, max_length, emb_size]
         query = self.WQ(q)
         tf.print("query:", tf.shape(query))
@@ -85,7 +120,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         key = tf.transpose(key, perm=[0, 2, 1, 3])
         value = tf.transpose(value, perm=[0, 2, 1, 3])
 
-        zs = self.subattentions(query, key, value)
+        zs = self.subattentions(query, key, value, mask)
         tf.print("output", tf.shape(zs))
         # convert back to [num_batch, max_length, num_head, qkv_size]
         # and reshape [num_batch, max_length, num_head * qkv_size]
@@ -101,10 +136,15 @@ class SelfAttention(tf.keras.layers.Layer):
         super(SelfAttention, self).__init__()
         self.constant_norm = tf.sqrt(tf.cast(qkv_size, tf.float32))
 
-    def call(self, query, key, value):
+    def call(self, query, key, value, mask=None):
         # x => [num_batch, max_length, emb_size]
         score = tf.linalg.matmul(query, key, transpose_a=False, transpose_b=True)
         score = score / self.constant_norm
+
+        # masking before softmax
+        if mask:
+            score += (mask * -1e9)
+
         score = tf.nn.softmax(score, axis=-1)
         z = tf.linalg.matmul(score, value, transpose_a=False, transpose_b=False)
         return z
@@ -126,13 +166,24 @@ class FeedForwardNN(tf.keras.layers.Layer):
 def create_padding_mask(seq):
     # seq => [num_batch, max_length]
     seq = tf.cast(tf.math.equal(seq, 0), tf.float32)
+    ss = tf.linalg.matmul(seq, seq, transpose_a=False, transpose_b=True)
     tf.print(seq)
+    tf.print(ss)
     mask = tf.expand_dims(seq, axis=-1)
     tf.print(tf.shape(mask))
     mask = tf.reshape(mask, [-1, tf.shape(seq)[1], -1])
     return mask
 
 
-def create_seq_mask(seq):
-    pass
+def create_seq_mask(seq_len):
+    # just a simple upper triangle matrix
+    return 1-tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
 
+"""
+tf.print(create_seq_mask(5))
+tf.print(1 - tf.linalg.band_part(tf.ones((5, 5)), -1, 0))
+"""
+"""
+a = tf.Variable([[1, 2, 3, 0, 0], [3, 4, 0, 0, 0], [4, 5, 6, 7, 8]])
+tf.print(create_padding_mask(a))
+"""
