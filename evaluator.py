@@ -23,7 +23,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     """
 
     ##### MODIFY BELOW #####
-    ...
+    pass
     ##### MODIFY ABOVE #####
 
 

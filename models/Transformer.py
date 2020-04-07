@@ -36,7 +36,6 @@ class Transformer(tf.keras.Model):
         dec_output = self.embedding_tar(inp_dec)
         dec_output = self.dropout_dec(dec_output, training=training)
 
-        tf.print("enc:", tf.shape(enc_output))
         # position encoding
         enc_output = self.position_encoding_src(enc_output)
         dec_output = self.position_encoding_tar(dec_output)
@@ -57,11 +56,8 @@ class TransformerEncoders(tf.keras.layers.Layer):
         self.encoders = [EncoderUnit(emb_size, num_head, ff_inner, p_dropout) for _ in range(num_encoders)]
 
     def call(self, x, training, enc_padding_mask):
-        count = 0
         for encoder in self.encoders:
-            tf.print("Encoder", count)
             x = encoder(x, training, enc_padding_mask)
-            count += 1
         return x
 
 
@@ -72,11 +68,8 @@ class TransformerDecoders(tf.keras.layers.Layer):
                          range(num_decoders)]
 
     def call(self, x, training, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask):
-        count = 0
         for decoder in self.decoders:
-            tf.print("Decoder", count)
             x = decoder(x, training, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask)
-            count += 1
         return x
 
 
@@ -99,21 +92,16 @@ class EncoderUnit(tf.keras.Model):
         self.dropout2 = tf.keras.layers.Dropout(p_dropout)
 
     def call(self, x, training, enc_padding_mask):
-        tf.print(tf.shape(x))
         # x => List of [num_batch, max_length, emb_size] * 3 as Q, K, V
         z = self.attention(x, x, x, enc_padding_mask)
-        tf.print("after multi:", tf.shape(z))
         z = self.dropout1(z, training=training)
         # Residual Connection and Layer Normalization (cuz x -> [x, x, x])
         z = self.layerNorm_multihead(z + x)
-        tf.print("after multi layer norm:", tf.shape(z))
         # Position-wise Feed-Forward Neural Network
         r = self.ffnn(z)
         r = self.dropout2(r, training=training)
-        tf.print("after FF:", tf.shape(r))
         # Residual Connection and Layer Normalization
         r = self.layerNorm_FFNN(r + z)
-        tf.print("after FF layer norm:", tf.shape(r))
         return r
 
 
@@ -142,22 +130,16 @@ class DecoderUnit(tf.keras.Model):
 
     def call(self, x, training, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask):
         output_masked = self.masked_attention(x, x, x, look_ahead_mask)
-        tf.print("output masked:", tf.shape(output_masked))
         output_masked = self.dropout1(output_masked, training=training)
         output_masked = self.layerNorm_masked(output_masked + x)
-        tf.print("output masked layer norm:", tf.shape(output_masked))
 
         output_enc_dec = self.enc_dec_attention(output_masked, enc_output_k, enc_output_v, dec_padding_mask)
         output_enc_dec = self.dropout2(output_enc_dec, training=training)
-        tf.print("output enc dec:", tf.shape(output_enc_dec))
         output_enc_dec = self.layerNorm_enc_dec(output_enc_dec + output_masked)
-        tf.print("output enc dec after layer norm:", tf.shape(output_enc_dec))
 
         output = self.ffnn(output_enc_dec)
-        tf.print("after FF:", tf.shape(output))
         output = self.dropout3(output, training=training)
         output = self.layerNorm_FFNN(output + output_enc_dec)
-        tf.print("after FF layer norm:", tf.shape(output))
 
         return output
 
@@ -169,8 +151,6 @@ class PositionEncoding(tf.keras.layers.Layer):
 
     def call(self, x):
         seq_len = tf.shape(x)[1]
-        tf.print(seq_len)
-        tf.print("size", tf.shape(tf.broadcast_to(self.position_enc[:seq_len], tf.shape(x))))
         return x + tf.broadcast_to(self.position_enc[:seq_len], tf.shape(x))
 
     def _get_angles(self, pos, i, d_model):
@@ -208,12 +188,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     def call(self, q, k, v, mask=None):
         # x => [num_batch, max_length, emb_size]
         query = self.WQ(q)
-        tf.print("query:", tf.shape(query))
-        tf.print("K:", tf.shape(k))
         key = self.WK(k)
-        tf.print("key:", tf.shape(key))
         value = self.WV(v)
-        tf.print("value:", tf.shape(value))
 
         # split the Q, K, V for different Head attention
         # [num_batch, max_length, emb_size] => [num_batch, max_length, num_head, qkv_size]
@@ -229,13 +205,10 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         value = tf.transpose(value, perm=[0, 2, 1, 3])
 
         zs = self.subattentions(query, key, value, mask)
-        tf.print("output", tf.shape(zs))
         # convert back to [num_batch, max_length, num_head, qkv_size]
         # and reshape [num_batch, max_length, num_head * qkv_size]
         zs = tf.reshape(zs, [num_batch, -1, self.emb_size])
-        tf.print("output", tf.shape(zs))
         zs = self.WO(zs)
-        tf.print("final output", tf.shape(zs))
         return zs
 
 
@@ -254,7 +227,6 @@ class SelfAttention(tf.keras.layers.Layer):
             score += (mask * -1e9)
 
         score = tf.nn.softmax(score, axis=-1)
-        tf.print("SCORE", score[:, :10])
         z = tf.linalg.matmul(score, value, transpose_a=False, transpose_b=False)
         return z
 

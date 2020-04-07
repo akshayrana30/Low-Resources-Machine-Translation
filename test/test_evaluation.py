@@ -97,5 +97,5 @@ lines = [s for s in lines]
 with open('../prediction.txt', 'w') as f:
     for line in lines:
         t = translate(line)
-        output = ' '.join(t) + '\n'
+        output = ' '.join(t[1:-1]) + '\n'
         f.write(output)
