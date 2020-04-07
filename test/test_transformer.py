@@ -42,6 +42,6 @@ for src, tar in train_dataset:
 
     tf.print("src input", src)
     tf.print("tar input", tar)
-    output = model(src, tar, enc_padding_mask, combined_mask, dec_padding_mask)
-    # tf.print("model output", tf.shape(output))
+    output = model(src, tar, True, enc_padding_mask, combined_mask, dec_padding_mask)
+    tf.print("model output", tf.shape(output))
     break

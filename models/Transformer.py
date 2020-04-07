@@ -27,14 +27,14 @@ class Transformer(tf.keras.Model):
         self.dropout_enc = tf.keras.layers.Dropout(p_dropout)
         self.dropout_dec = tf.keras.layers.Dropout(p_dropout)
 
-    def call(self, inp_enc, inp_dec, enc_padding_mask,
+    def call(self, inp_enc, inp_dec, training, enc_padding_mask,
              look_ahead_mask, dec_padding_mask):
         # embedding layer
         enc_output = self.embedding_src(inp_enc)
-        enc_output = self.dropout_enc(enc_output)
+        enc_output = self.dropout_enc(enc_output, training=training)
 
         dec_output = self.embedding_tar(inp_dec)
-        dec_output = self.dropout_dec(dec_output)
+        dec_output = self.dropout_dec(dec_output, training=training)
 
         tf.print("enc:", tf.shape(enc_output))
         # position encoding
@@ -42,9 +42,9 @@ class Transformer(tf.keras.Model):
         dec_output = self.position_encoding_tar(dec_output)
 
         # encoders
-        enc_output = self.encoders(enc_output, enc_padding_mask)
+        enc_output = self.encoders(enc_output, training, enc_padding_mask)
         # decoders
-        dec_output = self.decoders(dec_output, enc_output, enc_output, look_ahead_mask, dec_padding_mask)
+        dec_output = self.decoders(dec_output, training, enc_output, enc_output, look_ahead_mask, dec_padding_mask)
 
         # linear layer
         output = self.linear(dec_output)
@@ -56,11 +56,11 @@ class TransformerEncoders(tf.keras.layers.Layer):
         super(TransformerEncoders, self).__init__()
         self.encoders = [EncoderUnit(emb_size, num_head, ff_inner, p_dropout) for _ in range(num_encoders)]
 
-    def call(self, x, enc_padding_mask):
+    def call(self, x, training, enc_padding_mask):
         count = 0
         for encoder in self.encoders:
             tf.print("Encoder", count)
-            x = encoder(x, enc_padding_mask)
+            x = encoder(x, training, enc_padding_mask)
             count += 1
         return x
 
@@ -71,11 +71,11 @@ class TransformerDecoders(tf.keras.layers.Layer):
         self.decoders = [DecoderUnit(emb_size, num_head, tar_max_length, ff_inner, p_dropout) for _ in
                          range(num_decoders)]
 
-    def call(self, x, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask):
+    def call(self, x, training, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask):
         count = 0
         for decoder in self.decoders:
             tf.print("Decoder", count)
-            x = decoder(x, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask)
+            x = decoder(x, training, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask)
             count += 1
         return x
 
@@ -98,18 +98,18 @@ class EncoderUnit(tf.keras.Model):
         self.dropout1 = tf.keras.layers.Dropout(p_dropout)
         self.dropout2 = tf.keras.layers.Dropout(p_dropout)
 
-    def call(self, x, enc_padding_mask):
+    def call(self, x, training, enc_padding_mask):
         tf.print(tf.shape(x))
         # x => List of [num_batch, max_length, emb_size] * 3 as Q, K, V
         z = self.attention(x, x, x, enc_padding_mask)
         tf.print("after multi:", tf.shape(z))
-        z = self.dropout1(z)
+        z = self.dropout1(z, training=training)
         # Residual Connection and Layer Normalization (cuz x -> [x, x, x])
         z = self.layerNorm_multihead(z + x)
         tf.print("after multi layer norm:", tf.shape(z))
         # Position-wise Feed-Forward Neural Network
         r = self.ffnn(z)
-        r = self.dropout2(r)
+        r = self.dropout2(r, training=training)
         tf.print("after FF:", tf.shape(r))
         # Residual Connection and Layer Normalization
         r = self.layerNorm_FFNN(r + z)
@@ -140,26 +140,22 @@ class DecoderUnit(tf.keras.Model):
         self.dropout2 = tf.keras.layers.Dropout(p_dropout)
         self.dropout3 = tf.keras.layers.Dropout(p_dropout)
 
-    def call(self, x, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask):
-        tf.print(tf.shape(x))
-        # get the max_length of input
-        seq_mask = create_seq_mask(self.tar_max_length)
-
+    def call(self, x, training, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask):
         output_masked = self.masked_attention(x, x, x, look_ahead_mask)
         tf.print("output masked:", tf.shape(output_masked))
-        output_masked = self.dropout1(output_masked)
+        output_masked = self.dropout1(output_masked, training=training)
         output_masked = self.layerNorm_masked(output_masked + x)
         tf.print("output masked layer norm:", tf.shape(output_masked))
 
         output_enc_dec = self.enc_dec_attention(output_masked, enc_output_k, enc_output_v, dec_padding_mask)
-        output_enc_dec = self.dropout2(output_enc_dec)
+        output_enc_dec = self.dropout2(output_enc_dec, training=training)
         tf.print("output enc dec:", tf.shape(output_enc_dec))
         output_enc_dec = self.layerNorm_enc_dec(output_enc_dec + output_masked)
         tf.print("output enc dec after layer norm:", tf.shape(output_enc_dec))
 
         output = self.ffnn(output_enc_dec)
         tf.print("after FF:", tf.shape(output))
-        output = self.dropout3(output)
+        output = self.dropout3(output, training=training)
         output = self.layerNorm_FFNN(output + output_enc_dec)
         tf.print("after FF layer norm:", tf.shape(output))
 
