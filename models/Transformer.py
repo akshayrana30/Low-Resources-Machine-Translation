@@ -9,25 +9,31 @@ import numpy as np
 
 
 class Transformer(tf.keras.Model):
-    def __init__(self, voc_size_src, voc_size_tar, src_max_length, tar_max_length, num_encoders, num_decoders, emb_size, num_head, ff_inner=2048):
+    def __init__(self, voc_size_src, voc_size_tar, src_max_length, tar_max_length, num_encoders, num_decoders,
+                 emb_size, num_head, ff_inner=2048, p_dropout=0.1):
         super(Transformer, self).__init__()
-        # Todo: embedding layer (turn index to embedding)
         self.embedding_src = tf.keras.layers.Embedding(voc_size_src, emb_size)
         self.embedding_tar = tf.keras.layers.Embedding(voc_size_tar, emb_size)
 
-        # Todo: position encoding layer (add relative position info)
         self.position_encoding_src = PositionEncoding(src_max_length, emb_size)
         self.position_encoding_tar = PositionEncoding(tar_max_length, emb_size)
 
-        self.encoders = TransformerEncoders(emb_size, num_head, num_encoders, ff_inner)
-        self.decoders = TransformerDecoders(emb_size, num_head, tar_max_length, num_decoders, ff_inner)
+        self.encoders = TransformerEncoders(emb_size, num_head, num_encoders, ff_inner, p_dropout)
+        self.decoders = TransformerDecoders(emb_size, num_head, tar_max_length, num_decoders, ff_inner, p_dropout)
 
         self.linear = tf.keras.layers.Dense(voc_size_tar)
+
+        # dropout for position encoding like paper said
+        self.dropout_enc = tf.keras.layers.Dropout(p_dropout)
+        self.dropout_dec = tf.keras.layers.Dropout(p_dropout)
 
     def call(self, inp_enc, inp_dec):
         # embedding layer
         enc_output = self.embedding_src(inp_enc)
+        enc_output = self.dropout_enc(enc_output)
+
         dec_output = self.embedding_tar(inp_dec)
+        dec_output = self.dropout_dec(dec_output)
 
         tf.print("enc:", tf.shape(enc_output))
         # position encoding
@@ -49,9 +55,9 @@ class Transformer(tf.keras.Model):
 
 
 class TransformerEncoders(tf.keras.layers.Layer):
-    def __init__(self, emb_size, num_head, num_encoders=6, ff_inner=2048):
+    def __init__(self, emb_size, num_head, num_encoders=6, ff_inner=2048, p_dropout=0.1):
         super(TransformerEncoders, self).__init__()
-        self.encoders = [EncoderUnit(emb_size, num_head, ff_inner) for _ in range(num_encoders)]
+        self.encoders = [EncoderUnit(emb_size, num_head, ff_inner, p_dropout) for _ in range(num_encoders)]
 
     def call(self, x):
         count = 0
@@ -63,9 +69,9 @@ class TransformerEncoders(tf.keras.layers.Layer):
 
 
 class TransformerDecoders(tf.keras.layers.Layer):
-    def __init__(self, emb_size, num_head, tar_max_length, num_decoders=6, ff_inner=1024):
+    def __init__(self, emb_size, num_head, tar_max_length, num_decoders=6, ff_inner=1024, p_dropout=0.1):
         super(TransformerDecoders, self).__init__()
-        self.decoders = [DecoderUnit(emb_size, num_head, tar_max_length, ff_inner) for _ in
+        self.decoders = [DecoderUnit(emb_size, num_head, tar_max_length, ff_inner, p_dropout) for _ in
                          range(num_decoders)]
 
     def call(self, x, enc_output_k, enc_output_v):
@@ -78,7 +84,7 @@ class TransformerDecoders(tf.keras.layers.Layer):
 
 
 class EncoderUnit(tf.keras.Model):
-    def __init__(self, emb_size, num_head, ff_inner=2048):
+    def __init__(self, emb_size, num_head, ff_inner=2048, p_dropout=0.1):
         super(EncoderUnit, self).__init__()
 
         # multi-head attention layer
@@ -91,16 +97,22 @@ class EncoderUnit(tf.keras.Model):
         self.ffnn = FeedForwardNN(ff_inner, emb_size)
         self.layerNorm_FFNN = tf.keras.layers.LayerNormalization()
 
+        # regularization by dropout
+        self.dropout1 = tf.keras.layers.Dropout(p_dropout)
+        self.dropout2 = tf.keras.layers.Dropout(p_dropout)
+
     def call(self, x):
         tf.print(tf.shape(x))
         # x => List of [num_batch, max_length, emb_size] * 3 as Q, K, V
         z = self.attention(x, x, x)
         tf.print("after multi:", tf.shape(z))
+        z = self.dropout1(z)
         # Residual Connection and Layer Normalization (cuz x -> [x, x, x])
         z = self.layerNorm_multihead(z + x)
         tf.print("after multi layer norm:", tf.shape(z))
         # Position-wise Feed-Forward Neural Network
         r = self.ffnn(z)
+        r = self.dropout2(r)
         tf.print("after FF:", tf.shape(r))
         # Residual Connection and Layer Normalization
         r = self.layerNorm_FFNN(r + z)
@@ -109,7 +121,7 @@ class EncoderUnit(tf.keras.Model):
 
 
 class DecoderUnit(tf.keras.Model):
-    def __init__(self, emb_size, num_head, tar_max_length, ff_inner=2048):
+    def __init__(self, emb_size, num_head, tar_max_length, ff_inner=2048, p_dropout=0.1):
         super(DecoderUnit, self).__init__()
 
         # masked multi-head attention
@@ -126,6 +138,11 @@ class DecoderUnit(tf.keras.Model):
 
         self.tar_max_length = tar_max_length
 
+        # regularization by dropout
+        self.dropout1 = tf.keras.layers.Dropout(p_dropout)
+        self.dropout2 = tf.keras.layers.Dropout(p_dropout)
+        self.dropout3 = tf.keras.layers.Dropout(p_dropout)
+
     def call(self, x, enc_output_k, enc_output_v):
         tf.print(tf.shape(x))
         # get the max_length of input
@@ -133,16 +150,19 @@ class DecoderUnit(tf.keras.Model):
 
         output_masked = self.masked_attention(x, x, x, seq_mask)
         tf.print("output masked:", tf.shape(output_masked))
+        output_masked = self.dropout1(output_masked)
         output_masked = self.layerNorm_masked(output_masked + x)
         tf.print("output masked layer norm:", tf.shape(output_masked))
 
         output_enc_dec = self.enc_dec_attention(output_masked, enc_output_k, enc_output_v)
+        output_enc_dec = self.dropout2(output_enc_dec)
         tf.print("output enc dec:", tf.shape(output_enc_dec))
         output_enc_dec = self.layerNorm_enc_dec(output_enc_dec + output_masked)
         tf.print("output enc dec after layer norm:", tf.shape(output_enc_dec))
 
         output = self.ffnn(output_enc_dec)
         tf.print("after FF:", tf.shape(output))
+        output = self.dropout3(output)
         output = self.layerNorm_FFNN(output + output_enc_dec)
         tf.print("after FF layer norm:", tf.shape(output))
 
@@ -155,10 +175,7 @@ class PositionEncoding(tf.keras.layers.Layer):
         self.position_enc = self._positional_encoding(max_length, emb_size)
 
     def call(self, x):
-        tf.print(tf.shape(x))
-        a = tf.broadcast_to(self.position_enc, tf.shape(x))
-        tf.print(tf.shape(a))
-        return x + a
+        return x + tf.broadcast_to(self.position_enc, tf.shape(x))
 
     def _get_angles(self, pos, i, d_model):
         angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
