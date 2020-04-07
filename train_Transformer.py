@@ -103,7 +103,7 @@ def main(argv):
 
         # mask for first attention block in decoder
         look_ahead_mask = Transformer.create_seq_mask(target_max_length)
-        dec_target_padding_mask = Transformer.create_padding_mask(targ)
+        dec_target_padding_mask = Transformer.create_padding_mask(tar_inp)
         combined_mask = tf.maximum(dec_target_padding_mask, look_ahead_mask)
 
         # mask for "enc_dec" multihead attention
@@ -129,7 +129,7 @@ def main(argv):
 
         # mask for first attention block in decoder
         look_ahead_mask = Transformer.create_seq_mask(target_max_length)
-        dec_target_padding_mask = Transformer.create_padding_mask(targ)
+        dec_target_padding_mask = Transformer.create_padding_mask(tar_inp)
         combined_mask = tf.maximum(dec_target_padding_mask, look_ahead_mask)
 
         # mask for "enc_dec" multihead attention
