@@ -47,10 +47,6 @@ class Transformer(tf.keras.Model):
 
         # linear layer
         output = self.linear(dec_output)
-
-        # softmax
-        output = tf.nn.softmax(output)
-
         return output
 
 
