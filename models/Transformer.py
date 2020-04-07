@@ -26,25 +26,38 @@ class Transformer(tf.keras.Model):
         pass
 
 
-class EncoderUnit(tf.keras.layers.Layer):
-    def __init__(self):
-        super(EncoderUnit, self).__init__()
+class TransformerEncoders(tf.keras.layers.Layer):
+    def __init__(self, emb_size, num_head, num_encoders=6, ff_inner=2048):
+        super(TransformerEncoders, self).__init__()
+        self.encoders = [EncoderUnit(emb_size, num_head, ff_inner) for _ in range(num_encoders)]
 
-    def call(self):
-        pass
-
-
-class DecoderUnit(tf.keras.layers.Layer):
-    def __init__(self):
-        super(DecoderUnit, self).__init__()
-
-    def call(self):
-        pass
+    def call(self, x):
+        count = 0
+        for encoder in self.encoders:
+            tf.print("Encoder", count)
+            x = encoder(x)
+            count += 1
+        return x
 
 
-class TransformerEncoder(tf.keras.Model):
+class TransformerDecoders(tf.keras.layers.Layer):
+    def __init__(self, emb_size, num_head, num_decoders=6, ff_inner=1024):
+        super(TransformerDecoders, self).__init__()
+        self.decoders = [DecoderUnit(emb_size, num_head, ff_inner) for _ in
+                         range(num_decoders)]
+
+    def call(self, x, enc_output_k, enc_output_v):
+        count = 0
+        for decoder in self.decoders:
+            tf.print("Decoder", count)
+            x = decoder(x, enc_output_k, enc_output_v)
+            count += 1
+        return x
+
+
+class EncoderUnit(tf.keras.Model):
     def __init__(self, emb_size, num_head, ff_inner=2048):
-        super(TransformerEncoder, self).__init__()
+        super(EncoderUnit, self).__init__()
 
         # multi-head attention layer
         self.attention = MultiHeadAttention(emb_size, num_head)
@@ -73,40 +86,42 @@ class TransformerEncoder(tf.keras.Model):
         return r
 
 
-class TransformerDecoder(tf.keras.Model):
-    def __init__(self, emb_size, num_head, enc_output_k, enc_output_v, ff_inner=2048):
-        super(TransformerDecoder, self).__init__()
+class DecoderUnit(tf.keras.Model):
+    def __init__(self, emb_size, num_head, ff_inner=2048):
+        super(DecoderUnit, self).__init__()
 
         # masked multi-head attention
-        self.masked_attention(emb_size, num_head)
+        self.masked_attention = MultiHeadAttention(emb_size, num_head)
         self.layerNorm_masked = tf.keras.layers.LayerNormalization()
 
         # encoder-decoder attention
-        self.enc_dec_attention(emb_size, num_head)
+        self.enc_dec_attention = MultiHeadAttention(emb_size, num_head)
         self.layerNorm_enc_dec = tf.keras.layers.LayerNormalization()
 
         # position-wise feed-forward neural network layer
         self.ffnn = FeedForwardNN(ff_inner, emb_size)
         self.layerNorm_FFNN = tf.keras.layers.LayerNormalization()
 
-        # output from the last layer of encoder
-        self.enc_output_k = enc_output_k
-        self.enc_output_v = enc_output_v
-
-    def call(self, x):
+    def call(self, x, enc_output_k, enc_output_v):
         tf.print(tf.shape(x))
         # get the max_length of input
         max_length = tf.shape(x)[1]
         seq_mask = create_seq_mask(max_length)
 
         output_masked = self.masked_attention(x, x, x, seq_mask)
-        output_masked = self.layerNorm_multihead(output_masked + x)
+        tf.print("output masked:", tf.shape(output_masked))
+        output_masked = self.layerNorm_masked(output_masked + x)
+        tf.print("output masked layer norm:", tf.shape(output_masked))
 
-        output_enc_dec = self.self.enc_dec_attention(output_masked, self.enc_output_k, self.enc_output_v)
+        output_enc_dec = self.enc_dec_attention(output_masked, enc_output_k, enc_output_v)
+        tf.print("output enc dec:", tf.shape(output_enc_dec))
         output_enc_dec = self.layerNorm_enc_dec(output_enc_dec + output_masked)
+        tf.print("output enc dec after layer norm:", tf.shape(output_enc_dec))
 
         output = self.ffnn(output_enc_dec)
+        tf.print("after FF:", tf.shape(output))
         output = self.layerNorm_FFNN(output + output_enc_dec)
+        tf.print("after FF layer norm:", tf.shape(output))
 
         return output
 
@@ -155,6 +170,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         # x => [num_batch, max_length, emb_size]
         query = self.WQ(q)
         tf.print("query:", tf.shape(query))
+        tf.print("K:", tf.shape(k))
         key = self.WK(k)
         tf.print("key:", tf.shape(key))
         value = self.WV(v)
@@ -195,7 +211,7 @@ class SelfAttention(tf.keras.layers.Layer):
         score = score / self.constant_norm
 
         # masking before softmax
-        if mask:
+        if mask is not None:
             score += (mask * -1e9)
 
         score = tf.nn.softmax(score, axis=-1)

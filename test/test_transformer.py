@@ -5,7 +5,11 @@ num__batch = 8
 max_length = 100
 emb_size = 512
 
-model = Transformer.TransformerEncoder(emb_size=512, num_head=8, ff_inner=1024)
+enc = Transformer.TransformerEncoders(emb_size=512, num_head=8, num_encoders=6, ff_inner=1024)
+dec = Transformer.TransformerDecoders(emb_size=512, num_head=8, num_decoders=6, ff_inner=1024)
+
 
 inp = tf.ones([num__batch, max_length, emb_size])
-output = model(inp)
+label = tf.ones([num__batch, max_length, emb_size])
+output = enc(inp)
+output = dec(label, output, output)
