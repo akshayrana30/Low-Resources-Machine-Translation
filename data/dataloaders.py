@@ -79,7 +79,8 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     train_dataset = train_dataset.batch(batch_size, drop_remainder=True).prefetch(buffer_size=batch_size)
     valid_dataset = valid_dataset.batch(batch_size, drop_remainder=True).prefetch(buffer_size=batch_size)
 
-    return train_dataset, valid_dataset, source_tokenizer, target_tokenizer, size_train, size_val
+    return train_dataset, valid_dataset, source_tokenizer, target_tokenizer, size_train, \
+            size_val, source_max_length, target_max_length
 
 
 def prepare_corpus():

@@ -17,8 +17,8 @@ def convert(lang, tensor):
 source = "../data/pairs/train.lang1"
 target = "../data/pairs/train.lang2"
 
-train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, size_val\
-    = prepare_training_pairs(source, target, batch_size=1)
+train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
+            size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=1)
 
 src_vocsize = len(src_tokenizer.word_index) + 1
 tar_vocsize = len(tar_tokenizer.word_index) + 1

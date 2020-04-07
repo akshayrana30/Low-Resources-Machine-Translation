@@ -1,15 +1,34 @@
 import tensorflow as tf
+
+from data.dataloaders import prepare_training_pairs
 from models import Transformer
 
-num__batch = 8
-max_length = 100
-emb_size = 512
+source = "../data/pairs/train.lang1"
+target = "../data/pairs/train.lang2"
 
-enc = Transformer.TransformerEncoders(emb_size=512, num_head=8, num_encoders=6, ff_inner=1024)
-dec = Transformer.TransformerDecoders(emb_size=512, num_head=8, num_decoders=6, ff_inner=1024)
+train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
+size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=8)
 
+src_vocsize = len(src_tokenizer.word_index) + 1
+tar_vocsize = len(tar_tokenizer.word_index) + 1
+print("Source Language voc size: %s" % src_vocsize)
+print("Target Language voc size: %s" % tar_vocsize)
 
-inp = tf.ones([num__batch, max_length, emb_size])
-label = tf.ones([num__batch, max_length, emb_size])
-output = enc(inp)
-output = dec(label, output, output)
+print("Source Language max length: %s" % source_max_length)
+print("Target Language max length: %s" % target_max_length)
+
+model = Transformer.Transformer(voc_size_src=src_vocsize,
+                                voc_size_tar=tar_vocsize,
+                                src_max_length=source_max_length,
+                                tar_max_length=target_max_length,
+                                num_encoders=6,
+                                num_decoders=6,
+                                emb_size=512,
+                                num_head=8,
+                                ff_inner=1024)
+for src, tar in train_dataset:
+    tf.print("src input", tf.shape(src))
+    tf.print("tar input", tf.shape(tar))
+    output = model(src, tar)
+    tf.print("model output", tf.shape(output))
+    break

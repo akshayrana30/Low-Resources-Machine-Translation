@@ -9,21 +9,43 @@ import numpy as np
 
 
 class Transformer(tf.keras.Model):
-    def __init__(self, voc_size, num_encoders, num_decoders, emb_size, num_head, ff_inner=2048):
+    def __init__(self, voc_size_src, voc_size_tar, src_max_length, tar_max_length, num_encoders, num_decoders, emb_size, num_head, ff_inner=2048):
         super(Transformer, self).__init__()
         # Todo: embedding layer (turn index to embedding)
-        # Todo: position encoding layer (add relative position info)
-        # Todo: Endoders
-        # Todo: Decoders
+        self.embedding_src = tf.keras.layers.Embedding(voc_size_src, emb_size)
+        self.embedding_tar = tf.keras.layers.Embedding(voc_size_tar, emb_size)
 
-    def call(self):
+        # Todo: position encoding layer (add relative position info)
+        self.position_encoding_src = PositionEncoding(src_max_length, emb_size)
+        self.position_encoding_tar = PositionEncoding(tar_max_length, emb_size)
+
+        self.encoders = TransformerEncoders(emb_size, num_head, num_encoders, ff_inner)
+        self.decoders = TransformerDecoders(emb_size, num_head, tar_max_length, num_decoders, ff_inner)
+
+        self.linear = tf.keras.layers.Dense(voc_size_tar)
+
+    def call(self, inp_enc, inp_dec):
         # embedding layer
+        enc_output = self.embedding_src(inp_enc)
+        dec_output = self.embedding_tar(inp_dec)
+
+        tf.print("enc:", tf.shape(enc_output))
         # position encoding
+        enc_output = self.position_encoding_src(enc_output)
+        dec_output = self.position_encoding_tar(dec_output)
+
         # encoders
+        enc_output = self.encoders(enc_output)
         # decoders
+        dec_output = self.decoders(dec_output, enc_output, enc_output)
+
         # linear layer
+        output = self.linear(dec_output)
+
         # softmax
-        pass
+        output = tf.nn.softmax(output)
+
+        return output
 
 
 class TransformerEncoders(tf.keras.layers.Layer):
@@ -41,9 +63,9 @@ class TransformerEncoders(tf.keras.layers.Layer):
 
 
 class TransformerDecoders(tf.keras.layers.Layer):
-    def __init__(self, emb_size, num_head, num_decoders=6, ff_inner=1024):
+    def __init__(self, emb_size, num_head, tar_max_length, num_decoders=6, ff_inner=1024):
         super(TransformerDecoders, self).__init__()
-        self.decoders = [DecoderUnit(emb_size, num_head, ff_inner) for _ in
+        self.decoders = [DecoderUnit(emb_size, num_head, tar_max_length, ff_inner) for _ in
                          range(num_decoders)]
 
     def call(self, x, enc_output_k, enc_output_v):
@@ -87,7 +109,7 @@ class EncoderUnit(tf.keras.Model):
 
 
 class DecoderUnit(tf.keras.Model):
-    def __init__(self, emb_size, num_head, ff_inner=2048):
+    def __init__(self, emb_size, num_head, tar_max_length, ff_inner=2048):
         super(DecoderUnit, self).__init__()
 
         # masked multi-head attention
@@ -102,11 +124,12 @@ class DecoderUnit(tf.keras.Model):
         self.ffnn = FeedForwardNN(ff_inner, emb_size)
         self.layerNorm_FFNN = tf.keras.layers.LayerNormalization()
 
+        self.tar_max_length = tar_max_length
+
     def call(self, x, enc_output_k, enc_output_v):
         tf.print(tf.shape(x))
         # get the max_length of input
-        max_length = tf.shape(x)[1]
-        seq_mask = create_seq_mask(max_length)
+        seq_mask = create_seq_mask(self.tar_max_length)
 
         output_masked = self.masked_attention(x, x, x, seq_mask)
         tf.print("output masked:", tf.shape(output_masked))
@@ -132,7 +155,10 @@ class PositionEncoding(tf.keras.layers.Layer):
         self.position_enc = self._positional_encoding(max_length, emb_size)
 
     def call(self, x):
-        return x + self.position_enc
+        tf.print(tf.shape(x))
+        a = tf.broadcast_to(self.position_enc, tf.shape(x))
+        tf.print(tf.shape(a))
+        return x + a
 
     def _get_angles(self, pos, i, d_model):
         angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
@@ -146,7 +172,7 @@ class PositionEncoding(tf.keras.layers.Layer):
         angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
         angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
 
-        pos_encoding = angle_rads[np.newaxis, ...]
+        pos_encoding = angle_rads
         return tf.cast(pos_encoding, dtype=tf.float32)
 
 
