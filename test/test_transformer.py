@@ -7,7 +7,7 @@ source = "../data/pairs/train.lang1"
 target = "../data/pairs/train.lang2"
 
 train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
-size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=8)
+size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=1)
 
 src_vocsize = len(src_tokenizer.word_index) + 1
 tar_vocsize = len(tar_tokenizer.word_index) + 1
@@ -26,9 +26,11 @@ model = Transformer.Transformer(voc_size_src=src_vocsize,
                                 emb_size=512,
                                 num_head=8,
                                 ff_inner=1024)
+
+tf.random.set_seed(1234)
 for src, tar in train_dataset:
-    tf.print("src input", tf.shape(src))
-    tf.print("tar input", tf.shape(tar))
-    output = model(src, tar)
-    tf.print("model output", tf.shape(output))
+    tf.print("src input", src)
+    tf.print("tar input", tar)
+    # output = model(src, tar)
+    # tf.print("model output", tf.shape(output))
     break
