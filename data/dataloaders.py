@@ -46,11 +46,11 @@ def tokenize(lang):
     return tensor, lang_tokenizer
 
 
-def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0.2):
+def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0.2, seed=1234):
     """
     Provide dataloader for translation from aligned training pairs
     """
-    tf.random.set_seed(1234)
+    tf.random.set_seed(seed)
     # read data line by line with addition of "<start>", "<end>"
     list_source = create_dataset(path_source)
     list_target = create_dataset(path_target)
@@ -67,7 +67,7 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     # split the dataset into train and valid
     source_train, source_val, target_train, target_val = train_test_split(source_tensor,
                                                                           target_tensor,
-                                                                          test_size=valid_ratio, random_state=1234)
+                                                                          test_size=valid_ratio, random_state=seed)
     size_train = len(source_train)
     size_val = len(source_val)
     print("Size of train set: %s" % size_train)
