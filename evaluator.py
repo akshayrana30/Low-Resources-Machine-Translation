@@ -39,6 +39,7 @@ def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: b
                           'none', '--sentence-level', '--score-only'],
                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     lines = out.stdout.split('\n')
+
     if print_all_scores:
         print('\n'.join(lines[:-1]))
     else:
