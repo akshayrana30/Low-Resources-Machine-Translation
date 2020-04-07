@@ -16,6 +16,7 @@ src_vocsize = len(src_tokenizer.word_index) + 1
 tar_vocsize = len(tar_tokenizer.word_index) + 1
 
 # load model from checkpoint
+optimizer = tf.keras.optimizers.Adam()
 model = Transformer.Transformer(voc_size_src=src_vocsize,
                                 voc_size_tar=tar_vocsize,
                                 src_max_length=source_max_length,
@@ -25,6 +26,13 @@ model = Transformer.Transformer(voc_size_src=src_vocsize,
                                 emb_size=512,
                                 num_head=8,
                                 ff_inner=1024)
+
+ckpt_dir = "../checkpoints/"
+latest = tf.train.latest_checkpoint(ckpt_dir)
+
+checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
+status = checkpoint.restore(tf.train.latest_checkpoint(ckpt_dir))
+print("Restore Ckpt Sucessfully!!")
 
 
 # Evaluation Functions

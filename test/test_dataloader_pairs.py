@@ -26,6 +26,8 @@ tar_vocsize = len(tar_tokenizer.word_index) + 1
 encoder = RNNEncoder(src_vocsize, 256, 1024, 2)
 decoder = RNNDecoder(tar_vocsize, 256, 1024, 2)
 
+print(tar_tokenizer.word_index['récession'])
+
 for src, tar in train_dataset:
     print("src tensor:", tf.squeeze(src).numpy())
     print("src sentence:", convert(src_tokenizer, tf.squeeze(src).numpy()))
