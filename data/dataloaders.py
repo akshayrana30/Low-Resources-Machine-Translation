@@ -81,7 +81,7 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     valid_dataset = valid_dataset.batch(batch_size, drop_remainder=True).prefetch(buffer_size=batch_size)
 
     return train_dataset, valid_dataset, source_tokenizer, target_tokenizer, size_train, \
-            size_val, source_max_length, target_max_length
+           size_val, source_max_length, target_max_length
 
 
 def prepare_corpus():
@@ -98,3 +98,27 @@ def prepare_training_pairs_emb():
     (might combine with "prepare_training_pairs" in the end
     """
     pass
+
+
+def prepare_test_samples(path_source, batch_size=1):
+    """
+    Provide dataloader for testing and evaluation, the preprocessed step should be the same as preprare train and val
+    """
+
+    # read data line by line with addition of "<start>", "<end>"
+    list_source = create_dataset(path_source)
+    print("Size of training pairs: %s" % (len(list_source)))
+
+    # Todo: Add <unk> in the future, now we use all the words that appears in the texts
+    # encode text into index of words
+    source_tensor, source_tokenizer = tokenize(list_source)
+
+    source_max_length = max_length(source_tensor)
+
+    size_test = len(source_tensor)
+    print("Size of test set: %s" % size_test)
+
+    # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
+    test_dataset = tf.data.Dataset.from_tensor_slices(source_tensor).batch(batch_size)
+
+    return test_dataset, source_tokenizer, size_test, source_max_length

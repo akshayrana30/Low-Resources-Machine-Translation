@@ -35,7 +35,7 @@ flags.DEFINE_integer('num_dec', 6,
                      'number of stacked decoder')
 flags.DEFINE_integer('num_head', 8,
                      'number of head for multi-head attention')
-flags.DEFINE_integer('emb_size', 128,
+flags.DEFINE_integer('emb_size', 512,
                      'word embedding dimension')
 flags.DEFINE_integer('ffnn_dim', 1024,
                      'number of hidden unit for Feed-Forward Neural Networks')
