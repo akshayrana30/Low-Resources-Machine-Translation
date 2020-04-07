@@ -27,7 +27,8 @@ class Transformer(tf.keras.Model):
         self.dropout_enc = tf.keras.layers.Dropout(p_dropout)
         self.dropout_dec = tf.keras.layers.Dropout(p_dropout)
 
-    def call(self, inp_enc, inp_dec):
+    def call(self, inp_enc, inp_dec, enc_padding_mask,
+             look_ahead_mask, dec_padding_mask):
         # embedding layer
         enc_output = self.embedding_src(inp_enc)
         enc_output = self.dropout_enc(enc_output)
@@ -41,9 +42,9 @@ class Transformer(tf.keras.Model):
         dec_output = self.position_encoding_tar(dec_output)
 
         # encoders
-        enc_output = self.encoders(enc_output)
+        enc_output = self.encoders(enc_output, enc_padding_mask)
         # decoders
-        dec_output = self.decoders(dec_output, enc_output, enc_output)
+        dec_output = self.decoders(dec_output, enc_output, enc_output, look_ahead_mask, dec_padding_mask)
 
         # linear layer
         output = self.linear(dec_output)
@@ -55,11 +56,11 @@ class TransformerEncoders(tf.keras.layers.Layer):
         super(TransformerEncoders, self).__init__()
         self.encoders = [EncoderUnit(emb_size, num_head, ff_inner, p_dropout) for _ in range(num_encoders)]
 
-    def call(self, x):
+    def call(self, x, enc_padding_mask):
         count = 0
         for encoder in self.encoders:
             tf.print("Encoder", count)
-            x = encoder(x)
+            x = encoder(x, enc_padding_mask)
             count += 1
         return x
 
@@ -70,11 +71,11 @@ class TransformerDecoders(tf.keras.layers.Layer):
         self.decoders = [DecoderUnit(emb_size, num_head, tar_max_length, ff_inner, p_dropout) for _ in
                          range(num_decoders)]
 
-    def call(self, x, enc_output_k, enc_output_v):
+    def call(self, x, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask):
         count = 0
         for decoder in self.decoders:
             tf.print("Decoder", count)
-            x = decoder(x, enc_output_k, enc_output_v)
+            x = decoder(x, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask)
             count += 1
         return x
 
@@ -97,10 +98,10 @@ class EncoderUnit(tf.keras.Model):
         self.dropout1 = tf.keras.layers.Dropout(p_dropout)
         self.dropout2 = tf.keras.layers.Dropout(p_dropout)
 
-    def call(self, x):
+    def call(self, x, enc_padding_mask):
         tf.print(tf.shape(x))
         # x => List of [num_batch, max_length, emb_size] * 3 as Q, K, V
-        z = self.attention(x, x, x)
+        z = self.attention(x, x, x, enc_padding_mask)
         tf.print("after multi:", tf.shape(z))
         z = self.dropout1(z)
         # Residual Connection and Layer Normalization (cuz x -> [x, x, x])
@@ -139,18 +140,18 @@ class DecoderUnit(tf.keras.Model):
         self.dropout2 = tf.keras.layers.Dropout(p_dropout)
         self.dropout3 = tf.keras.layers.Dropout(p_dropout)
 
-    def call(self, x, enc_output_k, enc_output_v):
+    def call(self, x, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask):
         tf.print(tf.shape(x))
         # get the max_length of input
         seq_mask = create_seq_mask(self.tar_max_length)
 
-        output_masked = self.masked_attention(x, x, x, seq_mask)
+        output_masked = self.masked_attention(x, x, x, look_ahead_mask)
         tf.print("output masked:", tf.shape(output_masked))
         output_masked = self.dropout1(output_masked)
         output_masked = self.layerNorm_masked(output_masked + x)
         tf.print("output masked layer norm:", tf.shape(output_masked))
 
-        output_enc_dec = self.enc_dec_attention(output_masked, enc_output_k, enc_output_v)
+        output_enc_dec = self.enc_dec_attention(output_masked, enc_output_k, enc_output_v, dec_padding_mask)
         output_enc_dec = self.dropout2(output_enc_dec)
         tf.print("output enc dec:", tf.shape(output_enc_dec))
         output_enc_dec = self.layerNorm_enc_dec(output_enc_dec + output_masked)
@@ -254,6 +255,7 @@ class SelfAttention(tf.keras.layers.Layer):
             score += (mask * -1e9)
 
         score = tf.nn.softmax(score, axis=-1)
+        tf.print("SCORE", score[:, :10])
         z = tf.linalg.matmul(score, value, transpose_a=False, transpose_b=False)
         return z
 
@@ -274,12 +276,8 @@ class FeedForwardNN(tf.keras.layers.Layer):
 def create_padding_mask(seq):
     # seq => [num_batch, max_length]
     seq = tf.cast(tf.math.equal(seq, 0), tf.float32)
-    ss = tf.linalg.matmul(seq, seq, transpose_a=False, transpose_b=True)
-    tf.print(seq)
-    tf.print(ss)
-    mask = tf.expand_dims(seq, axis=-1)
-    tf.print(tf.shape(mask))
-    mask = tf.reshape(mask, [-1, tf.shape(seq)[1], -1])
+    # Todo: Understand how this broadcasting works
+    mask = seq[:, tf.newaxis, tf.newaxis, :]
     return mask
 
 
