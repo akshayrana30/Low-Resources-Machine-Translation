@@ -33,7 +33,7 @@ flags.DEFINE_integer('num_enc', 6,
                      'number of stacked encoder')
 flags.DEFINE_integer('num_dec', 6,
                      'number of stacked decoder')
-flags.DEFINE_integer('num_head', 6,
+flags.DEFINE_integer('num_head', 8,
                      'number of head for multi-head attention')
 flags.DEFINE_integer('emb_size', 128,
                      'word embedding dimension')
@@ -111,7 +111,7 @@ def main(argv):
 
         with tf.GradientTape() as tape:
             # feed input into encoder
-            predictions = model(inp, tar_inp, enc_padding_mask, combined_mask, dec_padding_mask)
+            predictions = model(inp, tar_inp, True, enc_padding_mask, combined_mask, dec_padding_mask)
             train_loss = loss_fn(tar_real, predictions)
 
             # optimize step
@@ -136,7 +136,7 @@ def main(argv):
         dec_padding_mask = Transformer.create_padding_mask(inp)
 
         # feed input into encoder
-        predictions = model(inp, tar_inp, enc_padding_mask, combined_mask, dec_padding_mask)
+        predictions = model(inp, tar_inp, False, enc_padding_mask, combined_mask, dec_padding_mask)
         val_loss = loss_fn(tar_real, predictions)
 
         return val_loss

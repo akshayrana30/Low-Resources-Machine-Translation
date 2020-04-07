@@ -168,7 +168,10 @@ class PositionEncoding(tf.keras.layers.Layer):
         self.position_enc = self._positional_encoding(max_length, emb_size)
 
     def call(self, x):
-        return x + tf.broadcast_to(self.position_enc, tf.shape(x))
+        seq_len = tf.shape(x)[1]
+        tf.print(seq_len)
+        tf.print("size", tf.shape(tf.broadcast_to(self.position_enc[:seq_len], tf.shape(x))))
+        return x + tf.broadcast_to(self.position_enc[:seq_len], tf.shape(x))
 
     def _get_angles(self, pos, i, d_model):
         angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
