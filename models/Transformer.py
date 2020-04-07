@@ -5,19 +5,40 @@ Ref:
 The Illustrated Transformer (https://jalammar.github.io/illustrated-transformer/)
 """
 import tensorflow as tf
+import numpy as np
 
 
 class Transformer(tf.keras.Model):
     def __init__(self, voc_size, num_encoders, num_decoders, emb_size, num_head, ff_inner=2048):
         super(Transformer, self).__init__()
-        # Todo: embedding layer
-        # Todo: position encoding layer
+        # Todo: embedding layer (turn index to embedding)
+        # Todo: position encoding layer (add relative position info)
+        # Todo: Endoders
+        # Todo: Decoders
 
     def call(self):
+        # embedding layer
+        # position encoding
         # encoders
         # decoders
         # linear layer
         # softmax
+        pass
+
+
+class EncoderUnit(tf.keras.layers.Layer):
+    def __init__(self):
+        super(EncoderUnit, self).__init__()
+
+    def call(self):
+        pass
+
+
+class DecoderUnit(tf.keras.layers.Layer):
+    def __init__(self):
+        super(DecoderUnit, self).__init__()
+
+    def call(self):
         pass
 
 
@@ -88,6 +109,30 @@ class TransformerDecoder(tf.keras.Model):
         output = self.layerNorm_FFNN(output + output_enc_dec)
 
         return output
+
+
+class PositionEncoding(tf.keras.layers.Layer):
+    def __init__(self, max_length, emb_size):
+        super(PositionEncoding, self).__init__()
+        self.position_enc = self._positional_encoding(max_length, emb_size)
+
+    def call(self, x):
+        return x + self.position_enc
+
+    def _get_angles(self, pos, i, d_model):
+        angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+        return pos * angle_rates
+
+    def _positional_encoding(self, max_length, emb_size):
+        angle_rads = self._get_angles(np.arange(max_length)[:, np.newaxis],
+                                      np.arange(emb_size)[np.newaxis, :],
+                                      emb_size)
+
+        angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
+        angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
+
+        pos_encoding = angle_rads[np.newaxis, ...]
+        return tf.cast(pos_encoding, dtype=tf.float32)
 
 
 class MultiHeadAttention(tf.keras.layers.Layer):
@@ -186,13 +231,3 @@ def create_padding_mask(seq):
 def create_seq_mask(seq_len):
     # just a simple upper triangle matrix
     return 1 - tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
-
-
-"""
-tf.print(create_seq_mask(5))
-tf.print(1 - tf.linalg.band_part(tf.ones((5, 5)), -1, 0))
-"""
-"""
-a = tf.Variable([[1, 2, 3, 0, 0], [3, 4, 0, 0, 0], [4, 5, 6, 7, 8]])
-tf.print(create_padding_mask(a))
-"""
