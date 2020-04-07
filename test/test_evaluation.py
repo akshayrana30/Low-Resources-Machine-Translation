@@ -105,5 +105,6 @@ lines = [s for s in lines]
 with open('../prediction.txt', 'w') as f:
     for line in lines:
         t = translate(line)
-        output = ' '.join(t[1:-1]).encode('utf-8').decode("cp950") + '\n'
+        t = [x for x in t]
+        output = ' '.join(t[1:-1]) + '\n'
         f.write(output)
