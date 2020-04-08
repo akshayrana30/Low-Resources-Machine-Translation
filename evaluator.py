@@ -23,6 +23,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     """
 
     ##### MODIFY BELOW #####
+    # Warp the test_evaluation.py as a function in here
     pass
     ##### MODIFY ABOVE #####
 
