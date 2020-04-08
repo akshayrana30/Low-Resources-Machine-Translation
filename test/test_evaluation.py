@@ -6,7 +6,6 @@ from definition import ROOT_DIR
 from data.dataloaders import prepare_training_pairs, preprocess_sentence
 from models import Transformer
 
-MAX_LENGTH = 20
 source = "../data/pairs/train.lang1"
 target = "../data/pairs/train.lang2"
 
@@ -41,11 +40,11 @@ print("Restore Ckpt Sucessfully!!")
 
 
 # Evaluation Functions
-def evaluate(inp_sentence):
+def evaluate(inp_sentence, max_length):
     # inp sentence is portuguese, hence adding the start and end token
     inp_sentence = preprocess_sentence(inp_sentence).split(' ')
-    inp_sentence = [src_tokenizer.word_index[x] for x in inp_sentence]
     print(inp_sentence)
+    inp_sentence = [src_tokenizer.word_index[x] for x in inp_sentence]
     encoder_input = tf.expand_dims(inp_sentence, 0)
 
     # as the target is english, the first word to the transformer should be the
@@ -53,7 +52,7 @@ def evaluate(inp_sentence):
     decoder_input = [tar_tokenizer.word_index['<start>']]
     output = tf.expand_dims(decoder_input, 0)
 
-    for i in range(MAX_LENGTH):
+    for i in range(max_length):
         # create mask
         enc_padding_mask = Transformer.create_padding_mask(encoder_input)
 
@@ -90,7 +89,7 @@ def evaluate(inp_sentence):
 
 
 def translate(sentence, max_length, plot=None):
-    result = evaluate(sentence).numpy()
+    result = evaluate(sentence, max_length).numpy()
     print(result)
     predicted_sentence = [tar_tokenizer.index_word[i] for i in result]
     print('Input: {}'.format(sentence))
