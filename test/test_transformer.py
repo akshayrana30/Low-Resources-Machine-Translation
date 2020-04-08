@@ -43,6 +43,5 @@ for src, tar in train_dataset:
     tf.print("src input", src)
     tf.print("tar input", tar)
     output = model(src, tar, True, enc_padding_mask, combined_mask, dec_padding_mask)
-    tf.print(tf.nn.softmax(output[0], axis = -1))
     tf.print("model output", tf.shape(output))
     break

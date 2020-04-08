@@ -9,6 +9,8 @@ from models import Transformer
 MAX_LENGTH = 20
 source = "../data/pairs/train.lang1"
 target = "../data/pairs/train.lang2"
+
+# indicate the file u want to translate here
 test = "../data/pairs/dummy_test_lang1"
 
 # we need the original tokenizer so as to preprocess the test data in the same way
