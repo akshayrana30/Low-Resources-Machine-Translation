@@ -1,2 +1,5 @@
 /checkpoints
 /logs
+prediction.txt
+/data/pairs/val.lang1
+/data/pairs/val.lang2
