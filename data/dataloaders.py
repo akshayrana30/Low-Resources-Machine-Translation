@@ -15,6 +15,7 @@ from sklearn.model_selection import train_test_split
 from preprocessing import tokenizer, punctuation_remover
 from definition import ROOT_DIR
 
+
 # Todo: Understand this
 def unicode_to_ascii(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s)
@@ -86,13 +87,13 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     src_end_idx = source_tokenizer.word_index['<end>']
     tar_end_idx = target_tokenizer.word_index['<end>']
     print("Writing the validation pairs into files for future evaluation")
-    with open(os.path.join(ROOT_DIR,'./data/pairs/val.lang1'), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, './data/pairs/val.lang1'), 'w', encoding="utf-8") as f:
         for src in source_val:
-            f.write(convert(source_tokenizer, src[1:np.where(src == src_end_idx)[0][0]])+"\n")
+            f.write(convert(source_tokenizer, src[1:np.where(src == src_end_idx)[0][0]]) + "\n")
 
-    with open(os.path.join(ROOT_DIR,'./data/pairs/val.lang2'), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, './data/pairs/val.lang2'), 'w', encoding="utf-8") as f:
         for tar in target_val:
-            f.write(convert(target_tokenizer, tar[1:np.where(tar == tar_end_idx)[0][0]])+"\n")
+            f.write(convert(target_tokenizer, tar[1:np.where(tar == tar_end_idx)[0][0]]) + "\n")
 
     # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
     train_dataset = tf.data.Dataset.from_tensor_slices((source_train, target_train)).shuffle(size_train)

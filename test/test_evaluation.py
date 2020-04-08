@@ -1,22 +1,25 @@
 import io
+import os
 import tensorflow as tf
 
+from definition import ROOT_DIR
 from data.dataloaders import prepare_training_pairs, preprocess_sentence
 from models import Transformer
 
 MAX_LENGTH = 20
 source = "../data/pairs/train.lang1"
 target = "../data/pairs/train.lang2"
-test = "../data/pairs/dummy_test_lang1"
+test = "../data/pairs/val.lang1"
 
+# we need the original tokenizer so as to preprocess the test data in the same way
 train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
 size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=1)
 
 src_vocsize = len(src_tokenizer.word_index) + 1
 tar_vocsize = len(tar_tokenizer.word_index) + 1
 
-# load model from checkpoint
-optimizer = tf.keras.optimizers.Adam()
+# load model from checkpoint (we can directly load the model here if we don't use check points)
+optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
 model = Transformer.Transformer(voc_size_src=src_vocsize,
                                 voc_size_tar=tar_vocsize,
                                 src_max_length=source_max_length,
@@ -102,7 +105,7 @@ lines = io.open(test, encoding='UTF-8').read().strip().split('\n')
 lines = [s for s in lines]
 
 # translate each line and save as files
-with open('../prediction.txt', 'w') as f:
+with open(os.path.join(ROOT_DIR, 'prediction.txt'), 'w') as f:
     for line in lines:
         t = translate(line)
         output = ' '.join(t[1:-1]) + '\n'
