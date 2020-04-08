@@ -10,7 +10,7 @@ source = "../data/pairs/train.lang1"
 target = "../data/pairs/train.lang2"
 
 # indicate the file u want to translate here
-test = "../data/pairs/dummy_test_lang1"
+test = "../data/pairs/val.lang1"
 
 # we need the original tokenizer so as to preprocess the test data in the same way
 train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
