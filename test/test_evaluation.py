@@ -14,7 +14,7 @@ test = "../data/pairs/dummy_test_lang1"
 
 # we need the original tokenizer so as to preprocess the test data in the same way
 train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
-size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=1)
+size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=1, valid_ratio=0.1)
 
 src_vocsize = len(src_tokenizer.word_index) + 1
 tar_vocsize = len(tar_tokenizer.word_index) + 1
@@ -36,12 +36,12 @@ latest = tf.train.latest_checkpoint(ckpt_dir)
 
 checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
 status = checkpoint.restore(tf.train.latest_checkpoint(ckpt_dir))
-print("Restore Ckpt Sucessfully!!")
 
 
 # Evaluation Functions
 def evaluate(inp_sentence, max_length):
     # inp sentence is portuguese, hence adding the start and end token
+    print(inp_sentence)
     inp_sentence = preprocess_sentence(inp_sentence).split(' ')
     print(inp_sentence)
     inp_sentence = [src_tokenizer.word_index[x] for x in inp_sentence]
@@ -108,6 +108,7 @@ lines = [s for s in lines]
 # translate each line and save as files
 with open(os.path.join(ROOT_DIR, 'prediction.txt'), 'w') as f:
     for line in lines:
+        line = line.rstrip()
         # the paper set MAX_LENGTH = input length + 50 when inference
         max_length = len(line) + 50
         t = translate(line, max_length=max_length)

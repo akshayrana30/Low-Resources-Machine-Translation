@@ -23,7 +23,7 @@ def unicode_to_ascii(s):
 
 
 def preprocess_sentence(sentence):
-    sentence = unicode_to_ascii(sentence)
+    # sentence = unicode_to_ascii(sentence)
     sentence = '<start> ' + sentence + ' <end>'
     return sentence
 
