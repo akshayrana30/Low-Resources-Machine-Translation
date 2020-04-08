@@ -73,7 +73,7 @@ def main(argv):
 
     # ----------------------------------------------------------------------------------
     # Choose the Optimizor, Loss Function, and Metrics
-    optimizer = tf.keras.optimizers.Adam()
+    optimizer = tf.keras.optimizers.Adam(learning_rate=FLAGS.lr)
     # Todo: figure out why SparceCategorticalCrossentropy
     criterion = tf.keras.losses.SparseCategoricalCrossentropy(
         from_logits=True, reduction='none')
