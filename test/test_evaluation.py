@@ -9,7 +9,7 @@ from models import Transformer
 MAX_LENGTH = 20
 source = "../data/pairs/train.lang1"
 target = "../data/pairs/train.lang2"
-test = "../data/pairs/val.lang1"
+test = "../data/pairs/dummy_test_lang1"
 
 # we need the original tokenizer so as to preprocess the test data in the same way
 train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
@@ -87,7 +87,7 @@ def evaluate(inp_sentence):
     return tf.squeeze(output, axis=0)
 
 
-def translate(sentence, plot=None):
+def translate(sentence, max_length, plot=None):
     result = evaluate(sentence).numpy()
     print(result)
     predicted_sentence = [tar_tokenizer.index_word[i] for i in result]
@@ -107,6 +107,8 @@ lines = [s for s in lines]
 # translate each line and save as files
 with open(os.path.join(ROOT_DIR, 'prediction.txt'), 'w') as f:
     for line in lines:
-        t = translate(line)
+        # the paper set MAX_LENGTH = input length + 50 when inference
+        max_length = len(line) + 50
+        t = translate(line, max_length=max_length)
         output = ' '.join(t[1:-1]) + '\n'
         f.write(output)
