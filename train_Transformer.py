@@ -41,7 +41,7 @@ flags.DEFINE_integer('ffnn_dim', 1024,
                      'number of hidden unit for Feed-Forward Neural Networks')
 flags.DEFINE_float('lr', 1e-3,
                    'learning rate')
-flags.DEFINE_float('valid_ratio', 0.2,
+flags.DEFINE_float('valid_ratio', 0.1,
                    'ration of train/valid split')
 
 
