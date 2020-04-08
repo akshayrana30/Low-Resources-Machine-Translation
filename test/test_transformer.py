@@ -7,7 +7,7 @@ source = "../data/pairs/train.lang1"
 target = "../data/pairs/train.lang2"
 
 train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
-size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=2)
+size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=1)
 
 src_vocsize = len(src_tokenizer.word_index) + 1
 tar_vocsize = len(tar_tokenizer.word_index) + 1
@@ -43,5 +43,6 @@ for src, tar in train_dataset:
     tf.print("src input", src)
     tf.print("tar input", tar)
     output = model(src, tar, True, enc_padding_mask, combined_mask, dec_padding_mask)
+    tf.print(tf.nn.softmax(output[0], axis = -1))
     tf.print("model output", tf.shape(output))
     break

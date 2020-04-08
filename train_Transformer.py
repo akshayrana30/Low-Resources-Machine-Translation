@@ -29,9 +29,9 @@ flags.DEFINE_integer('epochs', 100,
                      'number of epochs')
 flags.DEFINE_integer('batch_size', 64,
                      'batch size')
-flags.DEFINE_integer('num_enc', 6,
+flags.DEFINE_integer('num_enc', 3,
                      'number of stacked encoder')
-flags.DEFINE_integer('num_dec', 6,
+flags.DEFINE_integer('num_dec', 3,
                      'number of stacked decoder')
 flags.DEFINE_integer('num_head', 8,
                      'number of head for multi-head attention')
@@ -54,6 +54,7 @@ def main(argv):
                                                                             path_target=FLAGS.target,
                                                                             batch_size=FLAGS.batch_size,
                                                                             valid_ratio=FLAGS.valid_ratio)
+    print("size train", size_train)
     # calculate vocabulary size
     src_vocsize = len(src_tokenizer.word_index) + 1
     tar_vocsize = len(tar_tokenizer.word_index) + 1
@@ -98,6 +99,8 @@ def main(argv):
         tar_inp = targ[:, :-1]
         tar_real = targ[:, 1:]
 
+        # tf.print("tar inp", tar_inp)
+        # tf.print("tar real", tar_real)
         # create mask
         enc_padding_mask = Transformer.create_padding_mask(inp)
 
@@ -188,8 +191,8 @@ def main(argv):
             total_val_loss += val_loss
 
         # average loss
-        total_train_loss /= size_train
-        total_val_loss /= size_val
+        total_train_loss /= (size_train/FLAGS.batch_size)
+        total_val_loss /= (size_val/FLAGS.batch_size)
 
         # Write loss to Tensorborad
         with train_summary_writer.as_default():
