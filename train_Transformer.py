@@ -146,7 +146,7 @@ def main(argv):
 
     # ----------------------------------------------------------------------------------
     # Set up Checkpoints, so as to resume training if something interrupt, and save results
-    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_LSTM")
+    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_transformer")
     ckpt = tf.train.Checkpoint(optimizer=optimizer, model=model)
     manager = tf.train.CheckpointManager(
         ckpt, directory=FLAGS.ckpt, max_to_keep=3
