@@ -86,12 +86,22 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     # writing the validation pairs into files for future evaluation
     src_end_idx = source_tokenizer.word_index['<end>']
     tar_end_idx = target_tokenizer.word_index['<end>']
+
+    print("Writing the training pairs into files for future evaluation")
+    with open(os.path.join(ROOT_DIR, './data/benchmark/train.lang1'), 'w', encoding="utf-8") as f:
+        for src in source_train:
+            f.write(convert(source_tokenizer, src[1:np.where(src == src_end_idx)[0][0]]) + "\n")
+
+    with open(os.path.join(ROOT_DIR, './data/benchmark/train.lang2'), 'w', encoding="utf-8") as f:
+        for tar in target_train:
+            f.write(convert(target_tokenizer, tar[1:np.where(tar == tar_end_idx)[0][0]]) + "\n")
+
     print("Writing the validation pairs into files for future evaluation")
-    with open(os.path.join(ROOT_DIR, './data/pairs/val.lang1'), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, './data/benchmark/val.lang1'), 'w', encoding="utf-8") as f:
         for src in source_val:
             f.write(convert(source_tokenizer, src[1:np.where(src == src_end_idx)[0][0]]) + "\n")
 
-    with open(os.path.join(ROOT_DIR, './data/pairs/val.lang2'), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, './data/benchmark/val.lang2'), 'w', encoding="utf-8") as f:
         for tar in target_val:
             f.write(convert(target_tokenizer, tar[1:np.where(tar == tar_end_idx)[0][0]]) + "\n")
 
