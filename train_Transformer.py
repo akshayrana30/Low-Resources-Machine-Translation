@@ -27,7 +27,7 @@ flags.DEFINE_integer('seed', 1234,
                      'random seed for reproducible result')
 flags.DEFINE_integer('epochs', 100,
                      'number of epochs')
-flags.DEFINE_integer('batch_size', 1,
+flags.DEFINE_integer('batch_size', 128,
                      'batch size')
 flags.DEFINE_integer('num_enc', 6,
                      'number of stacked encoder')
