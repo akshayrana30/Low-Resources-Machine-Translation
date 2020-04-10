@@ -111,7 +111,12 @@ def main(argv):
 
     # ----------------------------------------------------------------------------------
     # train/valid function
-    @tf.function
+    # Todo: need to understand this
+    train_step_signature = [
+        tf.TensorSpec(shape=(None, None), dtype=tf.int64),
+        tf.TensorSpec(shape=(None, None), dtype=tf.int64),
+    ]
+    @tf.function(input_signature=train_step_signature)
     def train_step(inp, targ):
         tar_inp = targ[:, :-1]
         tar_real = targ[:, 1:]
@@ -139,7 +144,7 @@ def main(argv):
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         return train_loss
 
-    @tf.function
+    @tf.function(input_signature=train_step_signature)
     def valid_step(inp, targ):
         tar_inp = targ[:, :-1]
         tar_real = targ[:, 1:]
