@@ -17,9 +17,9 @@ from models import Transformer
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('source', './data/pairs/train.lang1',
+flags.DEFINE_string('source', './data/pairs/dummy_test.lang1',
                     'path of source language')
-flags.DEFINE_string('target', './data/pairs/train.lang2',
+flags.DEFINE_string('target', './data/pairs/dummy_test.lang2',
                     'path of target language')
 flags.DEFINE_string('ckpt', './checkpoints',
                     'path of target language')
@@ -27,11 +27,11 @@ flags.DEFINE_integer('seed', 1234,
                      'random seed for reproducible result')
 flags.DEFINE_integer('epochs', 100,
                      'number of epochs')
-flags.DEFINE_integer('batch_size', 64,
+flags.DEFINE_integer('batch_size', 1,
                      'batch size')
-flags.DEFINE_integer('num_enc', 3,
+flags.DEFINE_integer('num_enc', 6,
                      'number of stacked encoder')
-flags.DEFINE_integer('num_dec', 3,
+flags.DEFINE_integer('num_dec', 6,
                      'number of stacked decoder')
 flags.DEFINE_integer('num_head', 8,
                      'number of head for multi-head attention')
@@ -39,8 +39,6 @@ flags.DEFINE_integer('emb_size', 512,
                      'word embedding dimension')
 flags.DEFINE_integer('ffnn_dim', 1024,
                      'number of hidden unit for Feed-Forward Neural Networks')
-flags.DEFINE_float('lr', 1e-3,
-                   'learning rate')
 flags.DEFINE_float('valid_ratio', 0.1,
                    'ration of train/valid split')
 
@@ -54,7 +52,9 @@ def main(argv):
                                                                             path_target=FLAGS.target,
                                                                             batch_size=FLAGS.batch_size,
                                                                             valid_ratio=FLAGS.valid_ratio)
-    print("size train", size_train)
+
+    tf.print("target max", target_max_length)
+
     # calculate vocabulary size
     src_vocsize = len(src_tokenizer.word_index) + 1
     tar_vocsize = len(tar_tokenizer.word_index) + 1
@@ -73,7 +73,24 @@ def main(argv):
 
     # ----------------------------------------------------------------------------------
     # Choose the Optimizor, Loss Function, and Metrics
-    optimizer = tf.keras.optimizers.Adam(learning_rate=FLAGS.lr)
+    # create custom learning rate schedule
+    class transformer_lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+        def __init__(self, emb_size, warmup_steps=4000):
+            super(transformer_lr_schedule, self).__init__()
+            self.emb_size = tf.cast(emb_size, tf.float32)
+            self.warmup_steps = warmup_steps
+
+        def __call__(self, step):
+            lr_option1 = tf.math.rsqrt(step)
+            lr_option2 = step * (self.warmup_steps ** -1.5)
+            return tf.math.rsqrt(self.emb_size) * tf.math.minimum(lr_option1, lr_option2)
+
+    learning_rate = transformer_lr_schedule(FLAGS.emb_size)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate,
+                                         beta_1=0.9,
+                                         beta_2=0.98,
+                                         epsilon=1e-9)
+
     # Todo: figure out why SparceCategorticalCrossentropy
     criterion = tf.keras.losses.SparseCategoricalCrossentropy(
         from_logits=True, reduction='none')
@@ -149,7 +166,7 @@ def main(argv):
     ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_transformer")
     ckpt = tf.train.Checkpoint(optimizer=optimizer, model=model)
     manager = tf.train.CheckpointManager(
-        ckpt, directory=FLAGS.ckpt, max_to_keep=3
+        ckpt, directory=FLAGS.ckpt, max_to_keep=1
     )
     # restore from latest checkpoint and iteration
     status = ckpt.restore(manager.latest_checkpoint)
@@ -191,8 +208,8 @@ def main(argv):
             total_val_loss += val_loss
 
         # average loss
-        total_train_loss /= (size_train/FLAGS.batch_size)
-        total_val_loss /= (size_val/FLAGS.batch_size)
+        total_train_loss /= (size_train / FLAGS.batch_size)
+        total_val_loss /= (size_val / FLAGS.batch_size)
 
         # Write loss to Tensorborad
         with train_summary_writer.as_default():

@@ -220,13 +220,16 @@ class SelfAttention(tf.keras.layers.Layer):
     def call(self, query, key, value, mask=None):
         # x => [num_batch, max_length, emb_size]
         score = tf.linalg.matmul(query, key, transpose_a=False, transpose_b=True)
+        # print("score before", score.numpy())
         score = score / self.constant_norm
 
         # masking before softmax
         if mask is not None:
+            # print("mask", mask.numpy())
             score += (mask * -1e9)
-
+        # print("score after", score.numpy())
         score = tf.nn.softmax(score, axis=-1)
+        # print("score final", score.numpy())
         z = tf.linalg.matmul(score, value, transpose_a=False, transpose_b=False)
         return z
 

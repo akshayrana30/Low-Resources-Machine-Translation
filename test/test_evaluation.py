@@ -14,10 +14,12 @@ test = "../data/pairs/val.lang1"
 
 # we need the original tokenizer so as to preprocess the test data in the same way
 train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
-size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=1, valid_ratio=0.1)
+size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=8, valid_ratio=0.1)
 
 src_vocsize = len(src_tokenizer.word_index) + 1
 tar_vocsize = len(tar_tokenizer.word_index) + 1
+
+print("ma length", target_max_length)
 
 # load model from checkpoint (we can directly load the model here if we don't use check points)
 optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
@@ -30,12 +32,13 @@ model = Transformer.Transformer(voc_size_src=src_vocsize,
                                 emb_size=512,
                                 num_head=8,
                                 ff_inner=1024)
-
+"""
 ckpt_dir = "../checkpoints/"
 latest = tf.train.latest_checkpoint(ckpt_dir)
 
 checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
 status = checkpoint.restore(tf.train.latest_checkpoint(ckpt_dir))
+"""
 
 
 # Evaluation Functions
@@ -106,11 +109,11 @@ lines = io.open(test, encoding='UTF-8').read().strip().split('\n')
 lines = [s for s in lines]
 
 # translate each line and save as files
-with open(os.path.join(ROOT_DIR, 'prediction.txt'), 'w') as f:
+with open(os.path.join(ROOT_DIR, 'prediction.txt'), 'w', encoding='utf-8') as f:
     for line in lines:
         line = line.rstrip()
         # the paper set MAX_LENGTH = input length + 50 when inference
-        max_length = len(line) + 50
+        max_length = 50
         t = translate(line, max_length=max_length)
         output = ' '.join(t[1:-1]) + '\n'
         f.write(output)
