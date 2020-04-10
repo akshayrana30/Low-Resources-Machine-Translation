@@ -27,7 +27,7 @@ flags.DEFINE_integer('seed', 1234,
                      'random seed for reproducible result')
 flags.DEFINE_integer('epochs', 100,
                      'number of epochs')
-flags.DEFINE_integer('batch_size', 32,
+flags.DEFINE_integer('batch_size', 1,
                      'batch size')
 flags.DEFINE_integer('num_enc', 6,
                      'number of stacked encoder')
@@ -113,9 +113,10 @@ def main(argv):
     # train/valid function
     # Todo: need to understand this
     train_step_signature = [
-        tf.TensorSpec(shape=(None, None), dtype=tf.int64),
-        tf.TensorSpec(shape=(None, None), dtype=tf.int64),
+        tf.TensorSpec(shape=[None, None], dtype=tf.int32),
+        tf.TensorSpec(shape=[None, None], dtype=tf.int32)
     ]
+
     @tf.function(input_signature=train_step_signature)
     def train_step(inp, targ):
         tar_inp = targ[:, :-1]
