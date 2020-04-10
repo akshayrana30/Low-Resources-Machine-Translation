@@ -17,9 +17,9 @@ from models import Transformer
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('source', './data/pairs/dummy_test.lang1',
+flags.DEFINE_string('source', './data/pairs/train.lang1',
                     'path of source language')
-flags.DEFINE_string('target', './data/pairs/dummy_test.lang2',
+flags.DEFINE_string('target', './data/pairs/train.lang2',
                     'path of target language')
 flags.DEFINE_string('ckpt', './checkpoints',
                     'path of target language')
@@ -166,7 +166,7 @@ def main(argv):
     ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_transformer")
     ckpt = tf.train.Checkpoint(optimizer=optimizer, model=model)
     manager = tf.train.CheckpointManager(
-        ckpt, directory=FLAGS.ckpt, max_to_keep=1
+        ckpt, directory=FLAGS.ckpt, max_to_keep=2
     )
     # restore from latest checkpoint and iteration
     status = ckpt.restore(manager.latest_checkpoint)
