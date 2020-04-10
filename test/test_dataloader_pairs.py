@@ -17,24 +17,22 @@ def convert(lang, tensor):
 source = "../data/pairs/train.lang1"
 target = "../data/pairs/train.lang2"
 
-train_dataset, valid_dataset, src_tokenizer, tar_tokenizer = prepare_training_pairs(source, target, batch_size=2)
+train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
+            size_val, source_max_length, target_max_length = prepare_training_pairs(source,
+                                                                                    target,
+                                                                                    batch_size=2,
+                                                                                    valid_ratio=0.1)
 
 src_vocsize = len(src_tokenizer.word_index) + 1
 tar_vocsize = len(tar_tokenizer.word_index) + 1
 
-encoder = RNNEncoder(src_vocsize, 256, 1024, 2)
-decoder = RNNDecoder(tar_vocsize, 256, 1024, 2)
-encoder.build(input_shape=[[2, 64], [2, 1024]])
-encoder.summary()
-
+count = 0
 for src, tar in train_dataset:
-    # print("src tensor:", src.numpy())
-    # print("src sentence:", convert(src_tokenizer, tf.squeeze(src).numpy()))
-    # print("target tensor:", tar.numpy())
-    # print("target sentence:", convert(tar_tokenizer, tf.squeeze(tar).numpy()))
-    sample_hidden = encoder.initialize_hidden_state()
-    sample_output, sample_hidden = encoder(src, sample_hidden)
-    tf.print("enc hidden", tf.shape(sample_hidden))
-    output, states = decoder(tf.random.uniform((2, 1)), sample_hidden)
+    src = src[0]
+    tar = tar[0]
+    print("src tensor:", tf.squeeze(src).numpy())
+    print("src sentence:", convert(src_tokenizer, tf.squeeze(src).numpy()))
+    print("target tensor:", tf.squeeze(tar).numpy())
+    print("target sentence:", convert(tar_tokenizer, tf.squeeze(tar).numpy()))
     print("-----------------------------------------------")
     break
