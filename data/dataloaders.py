@@ -44,7 +44,7 @@ def tokenize(lang):
     lang_tokenizer.fit_on_texts(lang)
 
     tensor = lang_tokenizer.texts_to_sequences(lang)
-    tensor = tf.keras.preprocessing.sequence.pad_sequences(tensor, padding='post')
+    # tensor = tf.keras.preprocessing.sequence.pad_sequences(tensor, padding='post')
     return tensor, lang_tokenizer
 
 
@@ -78,6 +78,7 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     source_train, source_val, target_train, target_val = train_test_split(source_tensor,
                                                                           target_tensor,
                                                                           test_size=valid_ratio, random_state=seed)
+
     size_train = len(source_train)
     size_val = len(source_val)
     print("Size of train set: %s" % size_train)
@@ -90,18 +91,23 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     print("Writing the validation pairs into files for future evaluation")
     with open(os.path.join(ROOT_DIR, './data/pairs/val.lang1'), 'w', encoding="utf-8") as f:
         for src in source_val:
-            f.write(convert(source_tokenizer, src[1:np.where(src == src_end_idx)[0][0]]) + "\n")
+            f.write(convert(source_tokenizer, src[1:-1]) + "\n")
 
     with open(os.path.join(ROOT_DIR, './data/pairs/val.lang2'), 'w', encoding="utf-8") as f:
         for tar in target_val:
-            f.write(convert(target_tokenizer, tar[1:np.where(tar == tar_end_idx)[0][0]]) + "\n")
+            f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
 
     # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
-    train_dataset = tf.data.Dataset.from_tensor_slices((source_train, target_train)).shuffle(size_train)
-    valid_dataset = tf.data.Dataset.from_tensor_slices((source_val, target_val)).shuffle(size_val)
+    train_src = tf.data.Dataset.from_generator(lambda: iter(source_train), tf.int32).padded_batch(batch_size,  padded_shapes=[None])
+    train_target = tf.data.Dataset.from_generator(lambda: iter(target_train), tf.int32).padded_batch(batch_size,  padded_shapes=[None])
+    train_dataset = tf.data.Dataset.zip((train_src, train_target)) .shuffle(size_train)
 
-    train_dataset = train_dataset.batch(batch_size, drop_remainder=True).prefetch(buffer_size=batch_size)
-    valid_dataset = valid_dataset.batch(batch_size, drop_remainder=True).prefetch(buffer_size=batch_size)
+    val_src = tf.data.Dataset.from_generator(lambda: iter(source_val), tf.int32).padded_batch(batch_size,  padded_shapes=[None])
+    val_target = tf.data.Dataset.from_generator(lambda: iter(target_val), tf.int32).padded_batch(batch_size,  padded_shapes=[None])
+    valid_dataset = tf.data.Dataset.zip((val_src, val_target)).shuffle(size_train)
+
+    train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
+    valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
     return train_dataset, valid_dataset, source_tokenizer, target_tokenizer, size_train, \
            size_val, source_max_length, target_max_length

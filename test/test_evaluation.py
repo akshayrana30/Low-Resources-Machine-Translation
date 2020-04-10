@@ -14,7 +14,7 @@ test = "../data/pairs/val.lang1"
 
 # we need the original tokenizer so as to preprocess the test data in the same way
 train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
-size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=8, valid_ratio=0.1)
+size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=1, valid_ratio=0.1)
 
 src_vocsize = len(src_tokenizer.word_index) + 1
 tar_vocsize = len(tar_tokenizer.word_index) + 1
@@ -32,13 +32,12 @@ model = Transformer.Transformer(voc_size_src=src_vocsize,
                                 emb_size=512,
                                 num_head=8,
                                 ff_inner=1024)
-"""
+
 ckpt_dir = "../checkpoints/"
 latest = tf.train.latest_checkpoint(ckpt_dir)
 
 checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
 status = checkpoint.restore(tf.train.latest_checkpoint(ckpt_dir))
-"""
 
 
 # Evaluation Functions
@@ -48,13 +47,13 @@ def evaluate(inp_sentence, max_length):
     inp_sentence = preprocess_sentence(inp_sentence).split(' ')
     print(inp_sentence)
     inp_sentence = [src_tokenizer.word_index[x] for x in inp_sentence]
+    print(inp_sentence)
     encoder_input = tf.expand_dims(inp_sentence, 0)
 
     # as the target is english, the first word to the transformer should be the
     # english start token.
     decoder_input = [tar_tokenizer.word_index['<start>']]
     output = tf.expand_dims(decoder_input, 0)
-
     for i in range(max_length):
         # create mask
         enc_padding_mask = Transformer.create_padding_mask(encoder_input)
@@ -77,11 +76,9 @@ def evaluate(inp_sentence, max_length):
 
         # select the last word from the seq_len dimension
         predictions = predictions[:, -1:, :]  # (batch_size, 1, vocab_size)
-
         predicted_id = tf.cast(tf.argmax(predictions, axis=-1), tf.int32)
-
         # return the result if the predicted_id is equal to the end token
-        if predicted_id == tar_tokenizer.word_index['<end>']:
+        if predicted_id[0][0] == tar_tokenizer.word_index['<end>']:
             return tf.squeeze(output, axis=0)
 
         # concatentate the predicted_id to the output which is given to the decoder
