@@ -31,9 +31,11 @@ class Transformer(tf.keras.Model):
              look_ahead_mask, dec_padding_mask):
         # embedding layer
         enc_output = self.embedding_src(inp_enc)
+        enc_output *= tf.math.sqrt(tf.cast(self.emb_size, tf.float32))
         enc_output = self.dropout_enc(enc_output, training=training)
 
         dec_output = self.embedding_tar(inp_dec)
+        dec_output *= tf.math.sqrt(tf.cast(self.emb_size, tf.float32))
         dec_output = self.dropout_dec(dec_output, training=training)
 
         # position encoding
