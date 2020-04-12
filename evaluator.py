@@ -39,6 +39,7 @@ def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: b
     out = subprocess.run(["sacrebleu", "--input", pred_file_path, target_file_path, '--tokenize',
                           'none', '--sentence-level', '--score-only'],
                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    print(out)
     lines = out.stdout.split('\n')
 
     if print_all_scores:
