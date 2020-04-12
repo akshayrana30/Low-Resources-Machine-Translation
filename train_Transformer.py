@@ -94,6 +94,8 @@ def main(argv):
     # Todo: figure out why SparceCategorticalCrossentropy
     criterion = tf.keras.losses.SparseCategoricalCrossentropy(
         from_logits=True, reduction='none')
+    train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+        name='train_accuracy')
 
     def loss_fn(label, pred):
         """
@@ -164,7 +166,7 @@ def main(argv):
         # feed input into encoder
         predictions = model(inp, tar_inp, False, enc_padding_mask, combined_mask, dec_padding_mask)
         val_loss = loss_fn(tar_real, predictions)
-
+        train_accuracy(tar_real, predictions)
         return val_loss
 
     # ----------------------------------------------------------------------------------
@@ -224,9 +226,10 @@ def main(argv):
         with test_summary_writer.as_default():
             tf.summary.scalar('Valid loss', total_val_loss, step=epoch)
 
-        logging.info('Epoch {} Train Loss {:.4f} Valid Loss {:.4f}'.format(epoch + 1,
-                                                                           total_train_loss,
-                                                                           total_val_loss))
+        logging.info('Epoch {} Train Loss {:.4f} Valid loss {:.4f} Valid Accuracy {:.4f}'.format(epoch + 1,
+                                                                                                 total_train_loss,
+                                                                                                 total_val_loss,
+                                                                                                 train_accuracy.result()))
 
         logging.info('Time taken for 1 train_step {} sec\n'.format(time.time() - start))
 
