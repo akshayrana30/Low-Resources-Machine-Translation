@@ -218,8 +218,8 @@ def main(argv):
         total_val_loss = 0.
 
         # train
-        for (inp, targ) in train_dataset:
-            train_loss = train_step(inp, targ)
+        for inp in train_dataset:
+            train_loss = train_step(inp)
             total_train_loss += train_loss
 
         # save checkpoint
@@ -227,8 +227,8 @@ def main(argv):
             ckpt.save(file_prefix=ckpt_prefix)
 
         # validation
-        for (inp, tar) in valid_dataset:
-            val_loss = valid_step(inp, tar)
+        for inp in valid_dataset:
+            val_loss = valid_step(inp)
             total_val_loss += val_loss
 
         # average loss
