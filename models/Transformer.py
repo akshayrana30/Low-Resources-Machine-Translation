@@ -218,6 +218,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         value = tf.transpose(value, perm=[0, 2, 1, 3])
 
         zs = self.subattentions(query, key, value, mask)
+        zs = tf.transpose(zs, perm=[0, 2, 1, 3])
         # convert back to [num_batch, max_length, num_head, qkv_size]
         # and reshape [num_batch, max_length, num_head * qkv_size]
         zs = tf.reshape(zs, [num_batch, -1, self.emb_size])
