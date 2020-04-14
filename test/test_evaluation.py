@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from definition import ROOT_DIR
 from data.dataloaders import prepare_training_pairs, preprocess_sentence
-from models import Transformer
+from models import Transformer, google_transformer
 
 source = "../data/pairs/train.lang1"
 target = "../data/pairs/train.lang2"
@@ -40,10 +40,10 @@ optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate,
                                      beta_1=0.9,
                                      beta_2=0.98,
                                      epsilon=1e-9)
+
 model = Transformer.Transformer(voc_size_src=src_vocsize,
                                 voc_size_tar=tar_vocsize,
-                                src_max_length=source_max_length,
-                                tar_max_length=10000,
+                                max_pe=10000,
                                 num_encoders=6,
                                 num_decoders=6,
                                 emb_size=512,
@@ -125,37 +125,6 @@ def convert(lang, tensor):
             s += lang.index_word[t] + " "
     return s
 
-"""
-count = 0
-for inp, targ in valid_dataset:
-    # print("src tensor:", tf.squeeze(inp).numpy())
-    print("src sentence:", convert(src_tokenizer, tf.squeeze(inp).numpy()))
-    # print("target tensor:", tf.squeeze(targ).numpy())
-    print("target sentence:", convert(tar_tokenizer, tf.squeeze(targ).numpy()))
-    tar_inp = targ[:, :-1]
-    print("input:", convert(tar_tokenizer, tf.squeeze(tar_inp).numpy()))
-    tar_real = targ[:, 1:]
-
-    # inp = tf.ones_like(inp)
-    # create mask
-    enc_padding_mask = Transformer.create_padding_mask(inp)
-    # mask for first attention block in decoder
-    look_ahead_mask = Transformer.create_seq_mask(tf.shape(tar_inp)[1])
-    dec_target_padding_mask = Transformer.create_padding_mask(tar_inp)
-    combined_mask = tf.maximum(dec_target_padding_mask, look_ahead_mask)
-
-    # mask for "enc_dec" multihead attention
-    dec_padding_mask = Transformer.create_padding_mask(inp)
-
-    # feed input into encoder
-    predictions = model(inp, tar_inp, False, enc_padding_mask, combined_mask, dec_padding_mask)
-    predictions = tf.argmax(predictions, axis=-1)
-    print("predicted sentence:", convert(tar_tokenizer, tf.squeeze(predictions).numpy()))
-    print("-----------------------------------------------")
-    count += 1
-    if count:
-        break
-"""
 
 # translate each line and save as files
 with open(os.path.join(ROOT_DIR, 'base_transformer_prediction.txt'), 'w', encoding='utf-8') as f:
@@ -169,6 +138,5 @@ with open(os.path.join(ROOT_DIR, 'base_transformer_prediction.txt'), 'w', encodi
         output = ' '.join(t[1:-1]) + '\n'
         f.write(output)
         count += 1
-        if count > 1:
+        if count > 20:
             break
-

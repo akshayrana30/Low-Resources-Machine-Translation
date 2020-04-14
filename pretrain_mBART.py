@@ -13,7 +13,7 @@ from absl import flags
 from absl import logging
 
 from data.dataloaders import prepare_training_pairs
-from models import Transformer
+from models import mBART, Transformer
 
 FLAGS = flags.FLAGS
 
@@ -61,15 +61,14 @@ def main(argv):
     # ----------------------------------------------------------------------------------
     # Creating the instance of the model specified.
     logging.info("Create Transformer Model")
-    model = Transformer.Transformer(voc_size_src=src_vocsize,
-                                    voc_size_tar=tar_vocsize,
-                                    src_max_length=source_max_length,
-                                    tar_max_length=target_max_length,
-                                    num_encoders=FLAGS.num_enc,
-                                    num_decoders=FLAGS.num_dec,
-                                    emb_size=FLAGS.emb_size,
-                                    num_head=FLAGS.num_head,
-                                    ff_inner=FLAGS.ffnn_dim)
+    model = mBART.mBART(voc_size_src=src_vocsize,
+                        voc_size_tar=tar_vocsize,
+                        max_pe=10000,
+                        num_encoders=FLAGS.num_enc,
+                        num_decoders=FLAGS.num_dec,
+                        emb_size=FLAGS.emb_size,
+                        num_head=FLAGS.num_head,
+                        ff_inner=FLAGS.ffnn_dim)
 
     # ----------------------------------------------------------------------------------
     # Choose the Optimizor, Loss Function, and Metrics
@@ -115,14 +114,16 @@ def main(argv):
     # train/valid function
     # Todo: need to understand this
     train_step_signature = [
-        tf.TensorSpec(shape=[None, None], dtype=tf.int32),
         tf.TensorSpec(shape=[None, None], dtype=tf.int32)
     ]
 
     @tf.function(input_signature=train_step_signature)
-    def train_step(inp, targ):
-        tar_inp = targ[:, :-1]
-        tar_real = targ[:, 1:]
+    def train_step(inp):
+        # random masking token here
+
+        # set target
+        tar_inp = inp[:, :-1]
+        tar_real = inp[:, 1:]
 
         # tf.print("tar inp", tar_inp)
         # tf.print("tar real", tar_real)
@@ -148,9 +149,9 @@ def main(argv):
         return train_loss
 
     @tf.function(input_signature=train_step_signature)
-    def valid_step(inp, targ):
-        tar_inp = targ[:, :-1]
-        tar_real = targ[:, 1:]
+    def valid_step(inp):
+        tar_inp = inp[:, :-1]
+        tar_real = inp[:, 1:]
 
         # create mask
         enc_padding_mask = Transformer.create_padding_mask(inp)
