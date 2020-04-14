@@ -12,26 +12,24 @@ from absl import app
 from absl import flags
 from absl import logging
 
-from data.dataloaders import prepare_training_pairs
+from data.dataloaders import prepare_mbart_pretrain_pairs
 from models import mBART, Transformer
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('source', './data/pairs/train.lang1',
+flags.DEFINE_string('corpus', './data/corpus/corpus.multilingual',
                     'path of source language')
-flags.DEFINE_string('target', './data/pairs/train.lang2',
-                    'path of target language')
 flags.DEFINE_string('ckpt', './checkpoints',
                     'path of target language')
 flags.DEFINE_integer('seed', 1234,
                      'random seed for reproducible result')
 flags.DEFINE_integer('epochs', 100,
                      'number of epochs')
-flags.DEFINE_integer('batch_size', 1,
+flags.DEFINE_integer('batch_size', 64,
                      'batch size')
-flags.DEFINE_integer('num_enc', 6,
+flags.DEFINE_integer('num_enc', 12,
                      'number of stacked encoder')
-flags.DEFINE_integer('num_dec', 6,
+flags.DEFINE_integer('num_dec', 12,
                      'number of stacked decoder')
 flags.DEFINE_integer('num_head', 8,
                      'number of head for multi-head attention')
@@ -47,17 +45,16 @@ def main(argv):
     # Creating dataloaders for training and validation
     logging.info("Creating the source dataloader from: %s" % FLAGS.source)
     logging.info("Creating the target dataloader from: %s" % FLAGS.target)
-    train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
-    size_val, source_max_length, target_max_length = prepare_training_pairs(path_source=FLAGS.source,
-                                                                            path_target=FLAGS.target,
-                                                                            batch_size=FLAGS.batch_size,
-                                                                            valid_ratio=FLAGS.valid_ratio)
+    train_dataset, valid_dataset, corpus_tokenizer, size_train, \
+    size_val, corpus_max_length = prepare_mbart_pretrain_pairs(path_corpus=FLAGS.corpus,
+                                                               batch_size=FLAGS.batch_size,
+                                                               valid_ratio=FLAGS.valid_ratio)
 
-    tf.print("target max", target_max_length)
+    tf.print("corpus max:", corpus_max_length)
 
     # calculate vocabulary size
-    src_vocsize = len(src_tokenizer.word_index) + 1
-    tar_vocsize = len(tar_tokenizer.word_index) + 1
+    src_vocsize = len(corpus_tokenizer.word_index) + 1
+    tar_vocsize = len(corpus_tokenizer.word_index) + 1
     # ----------------------------------------------------------------------------------
     # Creating the instance of the model specified.
     logging.info("Create Transformer Model")
@@ -73,22 +70,16 @@ def main(argv):
     # ----------------------------------------------------------------------------------
     # Choose the Optimizor, Loss Function, and Metrics
     # create custom learning rate schedule
-    class transformer_lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-        def __init__(self, emb_size, warmup_steps=4000):
-            super(transformer_lr_schedule, self).__init__()
-            self.emb_size = tf.cast(emb_size, tf.float32)
-            self.warmup_steps = warmup_steps
+    learning_rate = tf.keras.optimizers.schedules.PolynomialDecay(1e-3,
+                                                                  1000000,
+                                                                  end_learning_rate=0.0001,
+                                                                  power=1.0,
+                                                                  cycle=False)
 
-        def __call__(self, step):
-            lr_option1 = tf.math.rsqrt(step)
-            lr_option2 = step * (self.warmup_steps ** -1.5)
-            return tf.math.rsqrt(self.emb_size) * tf.math.minimum(lr_option1, lr_option2)
-
-    learning_rate = transformer_lr_schedule(FLAGS.emb_size)
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate,
                                          beta_1=0.9,
                                          beta_2=0.98,
-                                         epsilon=1e-9)
+                                         epsilon=1e-6)
 
     # Todo: figure out why SparceCategorticalCrossentropy
     criterion = tf.keras.losses.SparseCategoricalCrossentropy(
@@ -197,7 +188,7 @@ def main(argv):
 
     # ----------------------------------------------------------------------------------
     # Set up Checkpoints, so as to resume training if something interrupt, and save results
-    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_transformer")
+    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_mBART")
     ckpt = tf.train.Checkpoint(optimizer=optimizer, model=model)
     manager = tf.train.CheckpointManager(
         ckpt, directory=FLAGS.ckpt, max_to_keep=2
