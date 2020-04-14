@@ -21,7 +21,7 @@ flags.DEFINE_string('source', './data/pairs/train.lang1',
                     'path of source language')
 flags.DEFINE_string('target', './data/pairs/train.lang2',
                     'path of target language')
-flags.DEFINE_string('ckpt', './checkpoints',
+flags.DEFINE_string('ckpt', './ckpt_base_transformer',
                     'path of target language')
 flags.DEFINE_integer('seed', 1234,
                      'random seed for reproducible result')
@@ -171,7 +171,7 @@ def main(argv):
 
     # ----------------------------------------------------------------------------------
     # Set up Checkpoints, so as to resume training if something interrupt, and save results
-    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_transformer")
+    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_base_transformer")
     ckpt = tf.train.Checkpoint(optimizer=optimizer, model=model)
     manager = tf.train.CheckpointManager(
         ckpt, directory=FLAGS.ckpt, max_to_keep=2
@@ -187,8 +187,8 @@ def main(argv):
     # Setup the TensorBoard for better visualization
     logging.info("Setup the TensorBoard...")
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    train_log_dir = './logs/gradient_tape/' + current_time + '/train'
-    test_log_dir = './logs/gradient_tape/' + current_time + '/test'
+    train_log_dir = './logs/gradient_tape/' + current_time + '/base_transformer_train'
+    test_log_dir = './logs/gradient_tape/' + current_time + '/base_transformer_test'
     train_summary_writer = tf.summary.create_file_writer(train_log_dir)
     test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 

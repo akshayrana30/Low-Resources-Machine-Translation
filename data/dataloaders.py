@@ -16,21 +16,19 @@ from preprocessing import tokenizer, punctuation_remover
 from definition import ROOT_DIR
 
 
-# Todo: Understand this
-def unicode_to_ascii(s):
-    return ''.join(c for c in unicodedata.normalize('NFD', s)
-                   if unicodedata.category(c) != 'Mn')
-
-
 def preprocess_sentence(sentence):
-    # sentence = unicode_to_ascii(sentence)
     sentence = '<start> ' + sentence + ' <end>'
     return sentence
 
 
-def create_dataset(path):
+def create_dataset(path, preprocess=True):
     lines = io.open(path, encoding='UTF-8').read().strip().split('\n')
-    lines = [preprocess_sentence(s) for s in lines]
+    if preprocess:
+        # for machine translation
+        lines = [preprocess_sentence(s) for s in lines]
+    else:
+        # for mBART
+        lines = [s for s in lines]
     return lines
 
 
@@ -44,7 +42,6 @@ def tokenize(lang):
     lang_tokenizer.fit_on_texts(lang)
 
     tensor = lang_tokenizer.texts_to_sequences(lang)
-    # tensor = tf.keras.preprocessing.sequence.pad_sequences(tensor, padding='post')
     return tensor, lang_tokenizer
 
 
@@ -98,12 +95,17 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
             f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
 
     # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
-    train_src = tf.data.Dataset.from_generator(lambda: iter(source_train), tf.int32).padded_batch(batch_size,  padded_shapes=[None])
-    train_target = tf.data.Dataset.from_generator(lambda: iter(target_train), tf.int32).padded_batch(batch_size,  padded_shapes=[None])
-    train_dataset = tf.data.Dataset.zip((train_src, train_target)) .shuffle(size_train)
+    train_src = tf.data.Dataset.from_generator(lambda: iter(source_train), tf.int32).padded_batch(batch_size,
+                                                                                                  padded_shapes=[None])
+    train_target = tf.data.Dataset.from_generator(lambda: iter(target_train), tf.int32).padded_batch(batch_size,
+                                                                                                     padded_shapes=[
+                                                                                                         None])
+    train_dataset = tf.data.Dataset.zip((train_src, train_target)).shuffle(size_train)
 
-    val_src = tf.data.Dataset.from_generator(lambda: iter(source_val), tf.int32).padded_batch(batch_size,  padded_shapes=[None])
-    val_target = tf.data.Dataset.from_generator(lambda: iter(target_val), tf.int32).padded_batch(batch_size,  padded_shapes=[None])
+    val_src = tf.data.Dataset.from_generator(lambda: iter(source_val), tf.int32).padded_batch(batch_size,
+                                                                                              padded_shapes=[None])
+    val_target = tf.data.Dataset.from_generator(lambda: iter(target_val), tf.int32).padded_batch(batch_size,
+                                                                                                 padded_shapes=[None])
     valid_dataset = tf.data.Dataset.zip((val_src, val_target)).shuffle(size_train)
 
     train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
@@ -113,20 +115,47 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
            size_val, source_max_length, target_max_length
 
 
-def prepare_corpus():
+def prepare_mbart_pretrain_pairs(path_corpus, batch_size=1, valid_ratio=0.1, seed=1234):
     """
-    Provide dataloader for learning language models or embeddings from unaligned corpus
+    Provide dataloader for pretraining mBART unaligned corpus
     """
-    # corpus is not preprocessed yet
-    pass
+    # Make sure the corpus is tokenized and english's punctuation is removed
+    tf.random.set_seed(seed)
+    # Todo: adjust preproces funciton
+    list_corpus = create_dataset(path_corpus)
+    print("Size of training pairs: %s" % (len(list_corpus)))
 
+    corpus_tensor, corpus_tokenizer = tokenize(list_corpus)
+    corpus_max_length = max_length(corpus_tensor)
 
-def prepare_training_pairs_emb():
-    """
-    Provide dataloader for translation with embedding mapping
-    (might combine with "prepare_training_pairs" in the end
-    """
-    pass
+    # split the dataset into train and valid
+    source_train, source_val, target_train, target_val = train_test_split(corpus_tensor,
+                                                                          corpus_tensor,
+                                                                          test_size=valid_ratio, random_state=seed)
+
+    size_train = len(source_train)
+    size_val = len(source_val)
+    print("Size of train set: %s" % size_train)
+    print("Size of valid set: %s" % size_val)
+
+    # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
+    train_src = tf.data.Dataset.from_generator(lambda: iter(source_train), tf.int32).padded_batch(batch_size,
+                                                                                                  padded_shapes=[None])
+    train_target = tf.data.Dataset.from_generator(lambda: iter(target_train), tf.int32).padded_batch(batch_size,
+                                                                                                     padded_shapes=[
+                                                                                                         None])
+    train_dataset = tf.data.Dataset.zip((train_src, train_target)).shuffle(size_train)
+
+    val_src = tf.data.Dataset.from_generator(lambda: iter(source_val), tf.int32).padded_batch(batch_size,
+                                                                                              padded_shapes=[None])
+    val_target = tf.data.Dataset.from_generator(lambda: iter(target_val), tf.int32).padded_batch(batch_size,
+                                                                                                 padded_shapes=[None])
+    valid_dataset = tf.data.Dataset.zip((val_src, val_target)).shuffle(size_train)
+
+    train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
+    valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
+
+    return train_dataset, valid_dataset, corpus_tokenizer, size_train, size_val, corpus_max_length
 
 
 def prepare_test_samples(path_source, batch_size=1):
