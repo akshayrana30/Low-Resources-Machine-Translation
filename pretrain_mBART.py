@@ -109,7 +109,9 @@ def main(argv):
 
     @tf.function(input_signature=train_step_signature)
     def train_step(inp):
-
+        # set target
+        tar_inp = inp[:, :-1]
+        tar_real = inp[:, 1:]
         # remember the padding
         pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, 0)), tf.int32)
         en = tf.math.equal(inp, 2)
@@ -122,9 +124,6 @@ def main(argv):
         # [MASK] token index is 1
         inp = tf.math.maximum(inp * mask, 1)
         inp *= pad
-        # set target
-        tar_inp = inp[:, :-1]
-        tar_real = inp[:, 1:]
 
         # tf.print("tar inp", tar_inp)
         # tf.print("tar real", tar_real)
@@ -151,7 +150,9 @@ def main(argv):
 
     @tf.function(input_signature=train_step_signature)
     def valid_step(inp):
-
+        # set target
+        tar_inp = inp[:, :-1]
+        tar_real = inp[:, 1:]
         # remember the padding
         pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, 0)), tf.int32)
         en = tf.math.equal(inp, 2)
@@ -164,9 +165,6 @@ def main(argv):
         # [MASK] token index is 1
         inp = tf.math.maximum(inp * mask, 1)
         inp *= pad
-        # set target
-        tar_inp = inp[:, :-1]
-        tar_real = inp[:, 1:]
 
         # create mask
         enc_padding_mask = Transformer.create_padding_mask(inp)
