@@ -216,16 +216,20 @@ def main(argv):
         total_val_loss = 0.
 
         # train
-        for inp in train_dataset:
+        for batch, inp in enumerate(train_dataset):
             train_loss = train_step(inp)
             total_train_loss += train_loss
+
+            if batch % 50 == 0:
+                print('Epoch {} Batch {} Loss {:.4f}'.format(
+                    epoch + 1, batch, train_loss))
 
         # save checkpoint
         if (epoch + 1) % 2 == 0:
             ckpt.save(file_prefix=ckpt_prefix)
 
         # validation
-        for inp in valid_dataset:
+        for batch, inp in enumerate(valid_dataset):
             val_loss = valid_step(inp)
             total_val_loss += val_loss
 

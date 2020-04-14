@@ -24,6 +24,7 @@ corpus_vocsize = len(corpus_tokenizer.word_index) + 1
 count = 1
 for src in train_dataset:
     src = src[0]
+    print(src.numpy())
     # remember the padding
     pad = tf.cast(tf.math.logical_not(tf.math.equal(src, 0)), tf.int32)
     en = tf.math.equal(src, 2)
@@ -39,7 +40,6 @@ for src in train_dataset:
     # restore padding
     print("src tensor:", tf.squeeze(src).numpy())
     print("src sentence:", convert(corpus_tokenizer, tf.squeeze(src).numpy()))
-    print("-----------------------------------------------")
     count += 1
     if count > 10:
         break
