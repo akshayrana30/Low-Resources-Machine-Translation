@@ -119,8 +119,19 @@ def main(argv):
 
     @tf.function(input_signature=train_step_signature)
     def train_step(inp):
-        # random masking token here
 
+        # remember the padding
+        pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, 0)), tf.int32)
+        en = tf.math.equal(inp, 2)
+        fr = tf.math.equal(inp, 3)
+        # token maskin
+        mask = tf.random.uniform(tf.shape(inp))
+        mask = tf.math.less(mask, 0.3)
+        mask = tf.math.logical_or(tf.math.logical_not(mask), tf.math.logical_or(en, fr))
+        mask = tf.cast(mask, tf.int32)
+        # [MASK] token index is 1
+        inp = tf.math.maximum(inp * mask, 1)
+        inp *= pad
         # set target
         tar_inp = inp[:, :-1]
         tar_real = inp[:, 1:]
@@ -150,6 +161,20 @@ def main(argv):
 
     @tf.function(input_signature=train_step_signature)
     def valid_step(inp):
+
+        # remember the padding
+        pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, 0)), tf.int32)
+        en = tf.math.equal(inp, 2)
+        fr = tf.math.equal(inp, 3)
+        # token maskin
+        mask = tf.random.uniform(tf.shape(inp))
+        mask = tf.math.less(mask, 0.3)
+        mask = tf.math.logical_or(tf.math.logical_not(mask), tf.math.logical_or(en, fr))
+        mask = tf.cast(mask, tf.int32)
+        # [MASK] token index is 1
+        inp = tf.math.maximum(inp * mask, 1)
+        inp *= pad
+        # set target
         tar_inp = inp[:, :-1]
         tar_real = inp[:, 1:]
 
