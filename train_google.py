@@ -138,7 +138,7 @@ def main(argv):
 
         with tf.GradientTape() as tape:
             # feed input into encoder
-            predictions = model(inp, tar_inp, True, enc_padding_mask, combined_mask, dec_padding_mask)
+            predictions, att = model(inp, tar_inp, True, enc_padding_mask, combined_mask, dec_padding_mask)
             train_loss = loss_fn(tar_real, predictions)
 
             # optimize step
