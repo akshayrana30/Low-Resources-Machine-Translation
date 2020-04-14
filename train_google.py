@@ -163,7 +163,7 @@ def main(argv):
         dec_padding_mask = Transformer.create_padding_mask(inp)
 
         # feed input into encoder
-        predictions = model(inp, tar_inp, False, enc_padding_mask, combined_mask, dec_padding_mask)
+        predictions, att = model(inp, tar_inp, False, enc_padding_mask, combined_mask, dec_padding_mask)
         val_loss = loss_fn(tar_real, predictions)
         train_accuracy(tar_real, predictions)
         return val_loss
