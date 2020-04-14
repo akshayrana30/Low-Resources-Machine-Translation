@@ -43,8 +43,7 @@ flags.DEFINE_float('valid_ratio', 0.1,
 
 def main(argv):
     # Creating dataloaders for training and validation
-    logging.info("Creating the source dataloader from: %s" % FLAGS.source)
-    logging.info("Creating the target dataloader from: %s" % FLAGS.target)
+    logging.info("Creating the source dataloader from: %s" % FLAGS.corpus)
     train_dataset, valid_dataset, corpus_tokenizer, size_train, \
     size_val, corpus_max_length = prepare_mbart_pretrain_pairs(path_corpus=FLAGS.corpus,
                                                                batch_size=FLAGS.batch_size,
