@@ -63,8 +63,7 @@ def main(argv):
     logging.info("Create Transformer Model")
     model = Transformer.Transformer(voc_size_src=src_vocsize,
                                     voc_size_tar=tar_vocsize,
-                                    src_max_length=source_max_length,
-                                    tar_max_length=target_max_length,
+                                    max_pe=10000,
                                     num_encoders=FLAGS.num_enc,
                                     num_decoders=FLAGS.num_dec,
                                     emb_size=FLAGS.emb_size,
