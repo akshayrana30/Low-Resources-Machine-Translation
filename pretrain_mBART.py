@@ -70,7 +70,7 @@ def main(argv):
     # Choose the Optimizor, Loss Function, and Metrics
     # create custom learning rate schedule
     learning_rate = tf.keras.optimizers.schedules.PolynomialDecay(1e-3,
-                                                                  1000000,
+                                                                  100000,
                                                                   end_learning_rate=0.0001,
                                                                   power=1.0,
                                                                   cycle=False)
