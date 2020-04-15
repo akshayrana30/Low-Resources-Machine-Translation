@@ -223,10 +223,14 @@ def main(argv):
             if batch % 50 == 0:
                 print('Epoch {} Batch {} Loss {:.4f}'.format(
                     epoch + 1, batch, train_loss))
+                if batch % 1000 == 0:
+                    ckpt.save(file_prefix=ckpt_prefix)
 
+        """
         # save checkpoint
         if (epoch + 1) % 2 == 0:
             ckpt.save(file_prefix=ckpt_prefix)
+        """
 
         # validation
         for batch, inp in enumerate(valid_dataset):
