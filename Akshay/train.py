@@ -120,7 +120,7 @@ def train():
 
     ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=3)
     # if a checkpoint exists, restore the latest checkpoint.
-    if ckpt_manager.latest_checkpoint:
+    if ckpt_manager.latest_checkpoint and load_from_checkpoint:
       ckpt.restore(ckpt_manager.latest_checkpoint)
       print ('Latest checkpoint restored!!')
     

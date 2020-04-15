@@ -1,4 +1,4 @@
-# root_path = "/content/drive/My Drive/NMT/"
+root_path = "/content/drive/My Drive/NMT/"
 # root_path = "/Users/akshayrana/Documents/Github/Low-Resources-Machine-Translation/Akshay/data/"
 unaligned_en_path = "unaligned.en"
 unaligned_fr_path = "unaligned.fr"
@@ -21,8 +21,9 @@ d_model = 256  #512
 dff = 1024      #2048
 num_heads = 8 
 dropout_rate = 0.1
+load_from_checkpoint = False
 checkpoint_path = root_path+"model_with_more_synthetic_data_checkpoints/train/"
-EPOCHS = 1
+EPOCHS = 10
 
 save_every = 5
 evaluate_bleu_every = 5
