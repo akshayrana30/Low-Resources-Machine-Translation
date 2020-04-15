@@ -17,16 +17,16 @@ from preprocessing import tokenizer, punctuation_remover
 from definition import ROOT_DIR
 
 
-def preprocess_sentence(sentence):
-    sentence = '<start> ' + sentence + ' <end>'
+def preprocess_sentence(sentence, start, end):
+    sentence = start + sentence + end
     return sentence
 
 
-def create_dataset(path, preprocess=True):
+def create_dataset(path, preprocess=True, start="<start> ", end=" <end>"):
     lines = io.open(path, encoding='UTF-8').read().strip().split('\n')
     if preprocess:
         # for machine translation
-        lines = [preprocess_sentence(s) for s in lines]
+        lines = [preprocess_sentence(s, start, end) for s in lines]
     else:
         # for mBART
         lines = [s for s in lines]
@@ -148,3 +148,63 @@ def prepare_mbart_pretrain_pairs(path_corpus, batch_size=1, valid_ratio=0.1, see
     valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
     return train_dataset, valid_dataset, corpus_tokenizer, size_train, size_val, corpus_max_length
+
+
+def prepare_mbart_finetune(path_corpus, path_source, path_target, batch_size=1, valid_ratio=0.2, seed=1234):
+    """
+    Provide dataloader for translation from aligned training pairs
+    """
+    tf.random.set_seed(seed)
+
+    # build tokenizer from corpus
+    list_corpus = create_dataset(path_corpus, preprocess=False)
+    corpus_tensor, corpus_tokenizer = tokenize(list_corpus, oov_token='[MASK]')
+
+    # read data line by line with addition of "<En>", "<Fr>"
+    list_source = create_dataset(path_source, start="<En> ", end=" <En>")
+    list_target = create_dataset(path_target, start="<Fr> ", end=" <Fr>")
+    print("Size of training pairs: %s" % (len(list_source)))
+
+    # split the dataset into train and valid
+    source_train, source_val, target_train, target_val = train_test_split(list_source,
+                                                                          list_target,
+                                                                          test_size=valid_ratio, random_state=seed)
+
+    # encode text into index of words (only fit tokenizer on training set)
+    source_train, corpus_tokenizer.texts_to_sequences(source_train)
+    target_train, corpus_tokenizer.texts_to_sequences(target_train)
+    source_val = corpus_tokenizer.texts_to_sequences(source_val)
+    target_val = corpus_tokenizer.texts_to_sequences(target_val)
+
+    size_train = len(source_train)
+    size_val = len(source_val)
+    print("Size of train set: %s" % size_train)
+    print("Size of valid set: %s" % size_val)
+
+    print("Writing the validation pairs into files for future evaluation")
+    with open(os.path.join(ROOT_DIR, './data/pairs/val.lang1'), 'w', encoding="utf-8") as f:
+        for src in source_val:
+            f.write(convert(corpus_tokenizer, src[1:-1]) + "\n")
+
+    with open(os.path.join(ROOT_DIR, './data/pairs/val.lang2'), 'w', encoding="utf-8") as f:
+        for tar in target_val:
+            f.write(convert(corpus_tokenizer, tar[1:-1]) + "\n")
+
+    # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
+    train_src = tf.data.Dataset.from_generator(lambda: iter(source_train), tf.int32).padded_batch(batch_size,
+                                                                                                  padded_shapes=[None])
+    train_target = tf.data.Dataset.from_generator(lambda: iter(target_train), tf.int32).padded_batch(batch_size,
+                                                                                                     padded_shapes=[
+                                                                                                         None])
+    train_dataset = tf.data.Dataset.zip((train_src, train_target)).shuffle(size_train)
+
+    val_src = tf.data.Dataset.from_generator(lambda: iter(source_val), tf.int32).padded_batch(batch_size,
+                                                                                              padded_shapes=[None])
+    val_target = tf.data.Dataset.from_generator(lambda: iter(target_val), tf.int32).padded_batch(batch_size,
+                                                                                                 padded_shapes=[None])
+    valid_dataset = tf.data.Dataset.zip((val_src, val_target)).shuffle(size_val)
+
+    train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
+    valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
+
+    return train_dataset, valid_dataset, corpus_tokenizer, size_train, size_val
