@@ -183,19 +183,18 @@ def main(argv):
 
     # ----------------------------------------------------------------------------------
     # Set up Checkpoints, so as to resume training if something interrupt, and save results
-    if not FLAGS.load_mBart:
-        ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_mBART_transformer")
-        ckpt = tf.train.Checkpoint(optimizer=optimizer, model=model)
-        manager = tf.train.CheckpointManager(
-            ckpt, directory=FLAGS.ckpt, max_to_keep=2
-        )
-        # restore from latest checkpoint and iteration
-        status = ckpt.restore(manager.latest_checkpoint)
-        status.assert_existing_objects_matched()
-        if manager.latest_checkpoint:
-            logging.info("Restored from {}".format(manager.latest_checkpoint))
-        else:
-            logging.info("Initializing from scratch.")
+    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_mBART_transformer")
+    ckpt = tf.train.Checkpoint(optimizer=optimizer, model=model)
+    manager = tf.train.CheckpointManager(
+        ckpt, directory=FLAGS.ckpt, max_to_keep=2
+    )
+    # restore from latest checkpoint and iteration
+    status = ckpt.restore(manager.latest_checkpoint)
+    status.assert_existing_objects_matched()
+    if manager.latest_checkpoint:
+        logging.info("Restored from {}".format(manager.latest_checkpoint))
+    else:
+        logging.info("Initializing from scratch.")
 
     # ----------------------------------------------------------------------------------
     # Setup the TensorBoard for better visualization
