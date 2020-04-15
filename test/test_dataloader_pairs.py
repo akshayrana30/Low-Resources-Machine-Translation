@@ -3,7 +3,6 @@ script to examine if dataloader for training pairs works fine
 """
 import tensorflow as tf
 from data.dataloaders import prepare_training_pairs
-from models.RNN import RNNEncoder, RNNDecoder
 
 
 def convert(lang, tensor):

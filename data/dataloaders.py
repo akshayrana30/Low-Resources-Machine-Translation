@@ -14,6 +14,7 @@ import tensorflow_datasets as tfds
 from sklearn.model_selection import train_test_split
 
 from preprocessing import tokenizer, punctuation_remover
+import sentencepiece as spm
 from definition import ROOT_DIR
 
 
@@ -71,7 +72,7 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
 
     # encode text into index of words (only fit tokenizer on training set)
     source_train, source_tokenizer = tokenize(source_train)
-    target_train, target_tokenizer = tokenize(target_train)
+    target_train, target_tokenizer = tokenize(target_train, lower=False)
     source_val = source_tokenizer.texts_to_sequences(source_val)
     target_val = target_tokenizer.texts_to_sequences(target_val)
 
@@ -109,7 +110,7 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     return train_dataset, valid_dataset, source_tokenizer, target_tokenizer, size_train, size_val
 
 
-def prepare_mbart_pretrain_pairs(path_corpus, batch_size=1, valid_ratio=0.1, seed=1234):
+def prepare_mbart_pretrain_pairs(path_corpus, path_spm, batch_size=1, valid_ratio=0.1, seed=1234):
     """
     Provide dataloader for pretraining mBART unaligned corpus
     """
@@ -120,9 +121,9 @@ def prepare_mbart_pretrain_pairs(path_corpus, batch_size=1, valid_ratio=0.1, see
     corpus_max_length = max_length(list_corpus)
 
     print("Size of training pairs: %s" % (len(list_corpus)))
-    corpus_tensor, corpus_tokenizer = tokenize(list_corpus, oov_token='[MASK]')
-    print("[MASK] index:", corpus_tokenizer.word_index['[MASK]'])
-
+    sp = spm.SentencePieceProcessor()
+    sp.Load(path_spm)
+    corpus_tensor = map(sp.EncodeAsIds, list_corpus)
     # split the dataset into train and valid
     source_train, source_val, target_train, target_val = train_test_split(corpus_tensor,
                                                                           corpus_tensor,
@@ -137,17 +138,17 @@ def prepare_mbart_pretrain_pairs(path_corpus, batch_size=1, valid_ratio=0.1, see
     train_dataset = tf.data.Dataset.from_generator(lambda: iter(source_train), output_types=tf.int32).padded_batch(
         batch_size,
         padded_shapes=[
-            None]).shuffle(size_train)
+            None], padding_values=-1).shuffle(size_train)
 
     valid_dataset = tf.data.Dataset.from_generator(lambda: iter(source_val), output_types=tf.int32).padded_batch(
         batch_size,
         padded_shapes=[
-            None]).shuffle(size_val)
+            None], padding_values=-1).shuffle(size_val)
 
     train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
     valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
-    return train_dataset, valid_dataset, corpus_tokenizer, size_train, size_val, corpus_max_length
+    return train_dataset, valid_dataset, size_train, size_val, corpus_max_length
 
 
 def prepare_mbart_finetune(path_corpus, path_source, path_target, batch_size=1, valid_ratio=0.2, seed=1234):
