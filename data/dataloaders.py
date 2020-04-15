@@ -123,7 +123,7 @@ def prepare_mbart_pretrain_pairs(path_corpus, path_spm, batch_size=1, valid_rati
     print("Size of training pairs: %s" % (len(list_corpus)))
     sp = spm.SentencePieceProcessor()
     sp.Load(path_spm)
-    corpus_tensor = map(sp.EncodeAsIds, list_corpus)
+    corpus_tensor = list(map(sp.EncodeAsIds, list_corpus))
     # split the dataset into train and valid
     source_train, source_val, target_train, target_val = train_test_split(corpus_tensor,
                                                                           corpus_tensor,
