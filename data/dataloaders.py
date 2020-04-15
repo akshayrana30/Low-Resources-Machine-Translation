@@ -208,3 +208,17 @@ def prepare_mbart_finetune(path_corpus, path_source, path_target, batch_size=1, 
     valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
     return train_dataset, valid_dataset, corpus_tokenizer, size_train, size_val
+
+
+def prepare_test(path_test, source_tokenizer, batch_size=1):
+    # read lines in test files
+    list_source = create_dataset(path_test)
+    source_test = source_tokenizer.texts_to_sequences(list_source)
+    size_test = len(source_test)
+    print("Size of test: %s" % size_test)
+
+    # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
+    test_dataset = tf.data.Dataset.from_generator(lambda: iter(source_test), tf.int32).padded_batch(batch_size,
+                                                                                                    padded_shapes=[
+                                                                                                        None])
+    return test_dataset

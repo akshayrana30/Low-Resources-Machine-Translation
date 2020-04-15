@@ -1,9 +1,10 @@
 import io
 import os
+import time
 import tensorflow as tf
 
 from definition import ROOT_DIR
-from data.dataloaders import prepare_training_pairs, preprocess_sentence
+from data.dataloaders import prepare_training_pairs, preprocess_sentence, prepare_test
 from models import Transformer, google_transformer
 
 source = "../data/pairs/train.lang1"
@@ -11,13 +12,16 @@ target = "../data/pairs/train.lang2"
 
 # indicate the file u want to translate here
 test = "../data/pairs/val.lang1"
-
+test_target = "../data/pairs/val.lang2"
 # we need the original tokenizer so as to preprocess the test data in the same way
-train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
-size_val= prepare_training_pairs(source, target, batch_size=1, valid_ratio=0.1)
+train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, \
+size_train, size_val = prepare_training_pairs(source, target, batch_size=1, valid_ratio=0.1)
 
 src_vocsize = len(src_tokenizer.word_index) + 1
+print(src_vocsize)
 tar_vocsize = len(tar_tokenizer.word_index) + 1
+
+test_dataset = prepare_test(test, src_tokenizer, batch_size=64)
 
 
 # load model from checkpoint (we can directly load the model here if we don't use check points)
@@ -55,17 +59,18 @@ checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
 status = checkpoint.restore(tf.train.latest_checkpoint(ckpt_dir))
 status.assert_existing_objects_matched()
 
+MAX_length = 200
 
-# Evaluation Functions
-def evaluate(inp_sentence, max_length):
-    # inp sentence is portuguese, hence adding the start and end token
-    inp_sentence = preprocess_sentence(inp_sentence, start="<start> ", end=" <end>").split(' ')
-    inp_sentence = [src_tokenizer.word_index[x] for x in inp_sentence]
-    encoder_input = tf.expand_dims(inp_sentence, 0)
 
-    decoder_input = [tar_tokenizer.word_index['<start>']]
-    output = tf.expand_dims(decoder_input, 0)
-    for i in range(max_length):
+def evaluate_batch(inp_tensor, batch_size):
+    # Expecting input from the val_dataset which is already tokenised.
+    encoder_input = inp_tensor
+    tf.print(tf.shape(encoder_input))
+    decoder_input = tf.expand_dims([tar_tokenizer.word_index['<start>']] * batch_size, axis=1)
+    tf.print(tf.shape(decoder_input))
+    output = decoder_input
+
+    for i in range(MAX_length):
         # create mask
         enc_padding_mask = Transformer.create_padding_mask(encoder_input)
         # mask for first attention block in decoder
@@ -84,31 +89,42 @@ def evaluate(inp_sentence, max_length):
                             combined_mask,
                             dec_padding_mask)
 
-        # select the last word from the seq_len dimension
         predictions = predictions[:, -1:, :]  # (batch_size, 1, vocab_size)
         predicted_id = tf.cast(tf.argmax(predictions, axis=-1), tf.int32)
-        # return the result if the predicted_id is equal to the end token
-        if predicted_id[0][0] == tar_tokenizer.word_index['<end>']:
-            return tf.squeeze(output, axis=0)
-
-        # concatentate the predicted_id to the output which is given to the decoder
-        # as its input.
+        if (predicted_id == tar_tokenizer.word_index['<end>']).numpy().all():
+            return output
         output = tf.concat([output, predicted_id], axis=-1)
+    return output
 
-    return tf.squeeze(output, axis=0)
+
+def translate_batch(inp, batch_size):
+    output = evaluate_batch(inp, batch_size)
+    pred_sentences = tar_tokenizer.sequences_to_texts(output.numpy())
+    pred_sentences = [x.split("<end>")[0].replace("<start>", "").strip() for x in pred_sentences]
+    return pred_sentences
 
 
-def translate(sentence, max_length, plot=None):
-    result = evaluate(sentence, max_length).numpy()
-    print(result)
-    predicted_sentence = [tar_tokenizer.index_word[i] for i in result]
-    print('Input: {}'.format(sentence))
-    print('Predicted translation: {}'.format(predicted_sentence))
+import subprocess
 
-    if plot:
-        # plot_attention_weights(attention_weights, sentence, result, plot)
-        pass
-    return predicted_sentence
+
+def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: bool):
+    """
+    Args:
+        pred_file_path: the file path that contains the predictions.
+        target_file_path: the file path that contains the targets (also called references).
+        print_all_scores: if True, will print one score per example.
+    Returns: None
+    """
+    out = subprocess.run(["sacrebleu", "--input", pred_file_path, target_file_path, '--tokenize',
+                          'none', '--sentence-level', '--score-only'],
+                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    lines = out.stdout.split(b'\n')
+    if print_all_scores:
+        print('\n'.join(lines[:-1]))
+    else:
+        scores = [float(x) for x in lines[:-1]]
+        print('final avg bleu score: {:.2f}'.format(sum(scores) / len(scores)))
+    return sum(scores) / len(scores)
 
 
 # Read test file line
@@ -124,17 +140,20 @@ def convert(lang, tensor):
     return s
 
 
-# translate each line and save as files
-with open(os.path.join(ROOT_DIR, 'base_transformer_prediction.txt'), 'w', encoding='utf-8') as f:
-    count = 0
-    for line in lines:
-        line = line.rstrip()
-        print(line)
-        # the paper set MAX_LENGTH = input length + 50 when inference
-        max_length = 200
-        t = translate(line, max_length=max_length)
-        output = ' '.join(t[1:-1]) + '\n'
-        f.write(output)
-        count += 1
-        if count > 20:
-            break
+pred_file_path = os.path.join(ROOT_DIR, "prediction")
+"""
+new_start = time.time()
+test_target = ""
+with  open(pred_file_path, 'w', encoding='utf-8', buffering=1) as pred_file:
+    for (batch, (inp)) in enumerate(test_dataset):
+        if batch % 5 == 0:
+            print("Evaluating for batch", batch)
+        pred_fr = translate_batch(inp, batch_size=64)
+        for p_fr in pred_fr:
+            pred_file.write(p_fr.strip() + '\n')
+"""
+# print('Time taken for Evaluation: {} secs\n'.format(time.time() - new_start))
+print("Files saved:", pred_file_path)
+score = compute_bleu(pred_file_path, test_target, False)
+print("Bleu Score: ", score)
+print("-------------")
