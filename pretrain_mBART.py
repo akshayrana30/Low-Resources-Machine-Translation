@@ -27,9 +27,9 @@ flags.DEFINE_integer('epochs', 100,
                      'number of epochs')
 flags.DEFINE_integer('batch_size', 64,
                      'batch size')
-flags.DEFINE_integer('num_enc', 12,
+flags.DEFINE_integer('num_enc', 6,
                      'number of stacked encoder')
-flags.DEFINE_integer('num_dec', 12,
+flags.DEFINE_integer('num_dec', 6,
                      'number of stacked decoder')
 flags.DEFINE_integer('num_head', 8,
                      'number of head for multi-head attention')
