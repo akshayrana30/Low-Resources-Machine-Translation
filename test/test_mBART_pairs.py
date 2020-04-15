@@ -16,7 +16,7 @@ def convert(lang, tensor):
     return s
 
 
-corpus = "../data/corpus/corpus.multilingual"
+corpus = "../data/corpus/test"
 path_spm = "../preprocessing/m.model"
 
 train_dataset, valid_dataset, size_train, size_val \
@@ -33,7 +33,7 @@ for src in train_dataset:
     tar_real = src[2:]
     print("src sentence:", sp.DecodeIds((tf.squeeze(src).numpy().tolist())))
     # remember the padding
-    pad = tf.cast(tf.math.logical_not(tf.math.equal(src, -1)), tf.int32)
+    pad = tf.cast(tf.math.logical_not(tf.math.equal(src, 0)), tf.int32)
     en = tf.math.equal(src, sp.piece_to_id('<En>'))
     fr = tf.math.equal(src, sp.piece_to_id('<Fr>'))
     # token maskin

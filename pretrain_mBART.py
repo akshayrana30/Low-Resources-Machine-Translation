@@ -28,7 +28,7 @@ flags.DEFINE_integer('seed', 1234,
                      'random seed for reproducible result')
 flags.DEFINE_integer('epochs', 100,
                      'number of epochs')
-flags.DEFINE_integer('batch_size', 23,
+flags.DEFINE_integer('batch_size', 32,
                      'batch size')
 flags.DEFINE_integer('num_enc', 12,
                      'number of stacked encoder')
@@ -118,7 +118,7 @@ def main(argv):
         tar_inp = inp[:, :-1]
         tar_real = inp[:, 2:]
         # remember the padding
-        pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, -1)), tf.int32)
+        pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, 0)), tf.int32)
         en = tf.math.equal(inp, sp.piece_to_id('<En>'))
         fr = tf.math.equal(inp, sp.piece_to_id('<Fr>'))
         # token maskin
@@ -159,7 +159,7 @@ def main(argv):
         tar_inp = inp[:, :-1]
         tar_real = inp[:, 2:]
         # remember the padding
-        pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, -1)), tf.int32)
+        pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, 0)), tf.int32)
         en = tf.math.equal(inp, sp.piece_to_id('<En>'))
         fr = tf.math.equal(inp, sp.piece_to_id('<Fr>'))
         # token maskin
