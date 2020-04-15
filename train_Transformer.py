@@ -21,7 +21,7 @@ flags.DEFINE_string('source', './data/pairs/train.lang1',
                     'path of source language')
 flags.DEFINE_string('target', './data/pairs/train.lang2',
                     'path of target language')
-flags.DEFINE_string('ckpt', './checkpoints',
+flags.DEFINE_string('ckpt', './ckpt_base_transformer',
                     'path of target language')
 flags.DEFINE_integer('seed', 1234,
                      'random seed for reproducible result')
@@ -47,13 +47,11 @@ def main(argv):
     # Creating dataloaders for training and validation
     logging.info("Creating the source dataloader from: %s" % FLAGS.source)
     logging.info("Creating the target dataloader from: %s" % FLAGS.target)
-    train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
-    size_val, source_max_length, target_max_length = prepare_training_pairs(path_source=FLAGS.source,
-                                                                            path_target=FLAGS.target,
-                                                                            batch_size=FLAGS.batch_size,
-                                                                            valid_ratio=FLAGS.valid_ratio)
-
-    tf.print("target max", target_max_length)
+    train_dataset, valid_dataset, src_tokenizer, \
+    tar_tokenizer, size_train, size_val = prepare_training_pairs(path_source=FLAGS.source,
+                                                                 path_target=FLAGS.target,
+                                                                 batch_size=FLAGS.batch_size,
+                                                                 valid_ratio=FLAGS.valid_ratio)
 
     # calculate vocabulary size
     src_vocsize = len(src_tokenizer.word_index) + 1
@@ -63,8 +61,7 @@ def main(argv):
     logging.info("Create Transformer Model")
     model = Transformer.Transformer(voc_size_src=src_vocsize,
                                     voc_size_tar=tar_vocsize,
-                                    src_max_length=source_max_length,
-                                    tar_max_length=target_max_length,
+                                    max_pe=10000,
                                     num_encoders=FLAGS.num_enc,
                                     num_decoders=FLAGS.num_dec,
                                     emb_size=FLAGS.emb_size,
@@ -94,6 +91,8 @@ def main(argv):
     # Todo: figure out why SparceCategorticalCrossentropy
     criterion = tf.keras.losses.SparseCategoricalCrossentropy(
         from_logits=True, reduction='none')
+    train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+        name='train_accuracy')
 
     def loss_fn(label, pred):
         """
@@ -164,12 +163,12 @@ def main(argv):
         # feed input into encoder
         predictions = model(inp, tar_inp, False, enc_padding_mask, combined_mask, dec_padding_mask)
         val_loss = loss_fn(tar_real, predictions)
-
+        train_accuracy(tar_real, predictions)
         return val_loss
 
     # ----------------------------------------------------------------------------------
     # Set up Checkpoints, so as to resume training if something interrupt, and save results
-    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_transformer")
+    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_base_transformer")
     ckpt = tf.train.Checkpoint(optimizer=optimizer, model=model)
     manager = tf.train.CheckpointManager(
         ckpt, directory=FLAGS.ckpt, max_to_keep=2
@@ -185,8 +184,8 @@ def main(argv):
     # Setup the TensorBoard for better visualization
     logging.info("Setup the TensorBoard...")
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    train_log_dir = './logs/gradient_tape/' + current_time + '/train'
-    test_log_dir = './logs/gradient_tape/' + current_time + '/test'
+    train_log_dir = './logs/gradient_tape/' + current_time + '/base_transformer_train'
+    test_log_dir = './logs/gradient_tape/' + current_time + '/base_transformer_test'
     train_summary_writer = tf.summary.create_file_writer(train_log_dir)
     test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
@@ -224,9 +223,10 @@ def main(argv):
         with test_summary_writer.as_default():
             tf.summary.scalar('Valid loss', total_val_loss, step=epoch)
 
-        logging.info('Epoch {} Train Loss {:.4f} Valid Loss {:.4f}'.format(epoch + 1,
-                                                                           total_train_loss,
-                                                                           total_val_loss))
+        logging.info('Epoch {} Train Loss {:.4f} Valid loss {:.4f} Valid Accuracy {:.4f}'.format(epoch + 1,
+                                                                                                 total_train_loss,
+                                                                                                 total_val_loss,
+                                                                                                 train_accuracy.result()))
 
         logging.info('Time taken for 1 train_step {} sec\n'.format(time.time() - start))
 

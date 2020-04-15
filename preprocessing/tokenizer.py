@@ -84,9 +84,9 @@ def tokenize(current_file, output, tokenizer, keep_case, keep_empty_lines, newli
     regex_skipped = 0
     tot_lines = 0
     separator = ' ' if newline_to_space else '\n'
-    with open(current_file, 'r') as stream:
+    with open(current_file, 'r', encoding='utf-8') as stream:
         file_size = get_stream_size(stream)
-        with open(out_tokenized_path, 'w') as out_tokenized_stream:
+        with open(out_tokenized_path, 'w', encoding='utf-8') as out_tokenized_stream:
             for line in tqdm.tqdm(stream, total=file_size):
                 tot_lines += 1
                 if not keep_case:
