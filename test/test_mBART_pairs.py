@@ -29,7 +29,7 @@ corpus_vocsize = len(sp)
 count = 1
 for src in train_dataset:
     src = src[0]
-    tar_inp = src[:-1]
+    tar_inp = src[:-2]
     tar_real = src[2:]
     print(src.numpy())
     print("src sentence:", sp.DecodeIds((tf.squeeze(src).numpy().tolist())))

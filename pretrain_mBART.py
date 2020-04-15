@@ -115,7 +115,7 @@ def main(argv):
     @tf.function(input_signature=train_step_signature)
     def train_step(inp):
         # set target
-        tar_inp = inp[:, :-1]
+        tar_inp = inp[:, :-2]
         tar_real = inp[:, 2:]
         # remember the padding
         pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, 0)), tf.int32)
@@ -156,7 +156,7 @@ def main(argv):
     @tf.function(input_signature=train_step_signature)
     def valid_step(inp):
         # set target
-        tar_inp = inp[:, :-1]
+        tar_inp = inp[:, :-2]
         tar_real = inp[:, 2:]
         # remember the padding
         pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, 0)), tf.int32)
