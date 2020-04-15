@@ -163,7 +163,7 @@ class Decoder(tf.keras.layers.Layer):
     self.num_layers = num_layers
     
     if d_emb is not None:
-      self.embedding = tf.keras.layers.Embedding(target_vocab_size, d_model, weights=[d_emb], trainable=False)
+      self.embedding = tf.keras.layers.Embedding(target_vocab_size, d_model, weights=[d_emb], trainable=True)
     else:
       self.embedding = tf.keras.layers.Embedding(target_vocab_size, d_model)
     
@@ -205,7 +205,7 @@ class Encoder(tf.keras.layers.Layer):
     self.num_layers = num_layers
     
     if e_emb is not None:
-      self.embedding = tf.keras.layers.Embedding(input_vocab_size, d_model, weights=[e_emb], trainable=False)
+      self.embedding = tf.keras.layers.Embedding(input_vocab_size, d_model, weights=[e_emb], trainable=True)
     else:
       self.embedding = tf.keras.layers.Embedding(input_vocab_size, d_model)
 
