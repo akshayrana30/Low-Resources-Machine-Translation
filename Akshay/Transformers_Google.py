@@ -1,13 +1,6 @@
 import tensorflow as tf
 import numpy as np
 
-import pickle 
-with open("emb_en_256.pkl", "rb") as f:
-    emb_matrix_en = pickle.load(f)
-    
-with open("emb_fr_256.pkl", "rb") as f:
-    emb_matrix_fr = pickle.load(f)
-
 def get_angles(pos, i, d_model):
   angle_rates = 1 / np.power(10000, (2 * (i//2)) / np.float32(d_model))
   return pos * angle_rates
@@ -135,14 +128,14 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
 class Transformer(tf.keras.Model):
   def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size, 
-               target_vocab_size, pe_input, pe_target, rate=0.1):
+               target_vocab_size, pe_input, pe_target, rate=0.1, e_emb=None, d_emb=None):
     super(Transformer, self).__init__()
 #     print("HERE")
     self.encoder = Encoder(num_layers, d_model, num_heads, dff, 
-                           input_vocab_size, pe_input, rate)
+                           input_vocab_size, pe_input, rate, e_emb)
 
     self.decoder = Decoder(num_layers, d_model, num_heads, dff, 
-                           target_vocab_size, pe_target, rate)
+                           target_vocab_size, pe_target, rate, d_emb)
 
     self.final_layer = tf.keras.layers.Dense(target_vocab_size)
     
@@ -163,14 +156,17 @@ class Transformer(tf.keras.Model):
 
 class Decoder(tf.keras.layers.Layer):
   def __init__(self, num_layers, d_model, num_heads, dff, target_vocab_size,
-               maximum_position_encoding, rate=0.1):
+               maximum_position_encoding, rate=0.1, d_emb = None):
     super(Decoder, self).__init__()
 
     self.d_model = d_model
     self.num_layers = num_layers
     
-#     self.embedding = tf.keras.layers.Embedding(target_vocab_size, d_model)
-    self.embedding = tf.keras.layers.Embedding(target_vocab_size, d_model, weights=[emb_matrix_fr], trainable=False)
+    if d_emb is not None:
+      self.embedding = tf.keras.layers.Embedding(target_vocab_size, d_model, weights=[d_emb], trainable=False)
+    else:
+      self.embedding = tf.keras.layers.Embedding(target_vocab_size, d_model)
+    
     self.pos_encoding = positional_encoding(maximum_position_encoding, d_model)
     
     self.dec_layers = [DecoderLayer(d_model, num_heads, dff, rate) 
@@ -202,14 +198,17 @@ class Decoder(tf.keras.layers.Layer):
 
 class Encoder(tf.keras.layers.Layer):
   def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size,
-               maximum_position_encoding, rate=0.1):
+               maximum_position_encoding, rate=0.1, e_emb=None):
     super(Encoder, self).__init__()
 
     self.d_model = d_model
     self.num_layers = num_layers
     
-#     self.embedding = tf.keras.layers.Embedding(input_vocab_size, d_model)
-    self.embedding = tf.keras.layers.Embedding(input_vocab_size, d_model, weights=[emb_matrix_en], trainable=False)
+    if e_emb is not None:
+      self.embedding = tf.keras.layers.Embedding(input_vocab_size, d_model, weights=[e_emb], trainable=False)
+    else:
+      self.embedding = tf.keras.layers.Embedding(input_vocab_size, d_model)
+
     self.pos_encoding = positional_encoding(maximum_position_encoding, 
                                             self.d_model)
     
