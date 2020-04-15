@@ -47,13 +47,11 @@ def main(argv):
     # Creating dataloaders for training and validation
     logging.info("Creating the source dataloader from: %s" % FLAGS.source)
     logging.info("Creating the target dataloader from: %s" % FLAGS.target)
-    train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
-    size_val, source_max_length, target_max_length = prepare_training_pairs(path_source=FLAGS.source,
-                                                                            path_target=FLAGS.target,
-                                                                            batch_size=FLAGS.batch_size,
-                                                                            valid_ratio=FLAGS.valid_ratio)
-
-    tf.print("target max", target_max_length)
+    train_dataset, valid_dataset, src_tokenizer, \
+    tar_tokenizer, size_train, size_val = prepare_training_pairs(path_source=FLAGS.source,
+                                                                 path_target=FLAGS.target,
+                                                                 batch_size=FLAGS.batch_size,
+                                                                 valid_ratio=FLAGS.valid_ratio)
 
     # calculate vocabulary size
     src_vocsize = len(src_tokenizer.word_index) + 1

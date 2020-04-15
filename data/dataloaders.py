@@ -38,8 +38,8 @@ def max_length(tensor):
 
 
 # Todo: Understand this. to see if it support choosing top V voc, and put <unk>
-def tokenize(lang, oov_token=None):
-    lang_tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='', oov_token=oov_token)
+def tokenize(lang, oov_token=None, lower=True):
+    lang_tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='', lower=lower, oov_token=oov_token)
     lang_tokenizer.fit_on_texts(lang)
 
     tensor = lang_tokenizer.texts_to_sequences(lang)
@@ -64,27 +64,21 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     list_target = create_dataset(path_target)
     print("Size of training pairs: %s" % (len(list_source)))
 
-    # Todo: Add <unk> in the future, now we use all the words that appears in the texts
-    # encode text into index of words
-    source_tensor, source_tokenizer = tokenize(list_source)
-    target_tensor, target_tokenizer = tokenize(list_target)
-
-    source_max_length = max_length(source_tensor)
-    target_max_length = max_length(target_tensor)
-
     # split the dataset into train and valid
-    source_train, source_val, target_train, target_val = train_test_split(source_tensor,
-                                                                          target_tensor,
+    source_train, source_val, target_train, target_val = train_test_split(list_source,
+                                                                          list_target,
                                                                           test_size=valid_ratio, random_state=seed)
+
+    # encode text into index of words (only fit tokenizer on training set)
+    source_train, source_tokenizer = tokenize(source_train)
+    target_train, target_tokenizer = tokenize(target_train)
+    source_val = source_tokenizer.texts_to_sequences(source_val)
+    target_val = target_tokenizer.texts_to_sequences(target_val)
 
     size_train = len(source_train)
     size_val = len(source_val)
     print("Size of train set: %s" % size_train)
     print("Size of valid set: %s" % size_val)
-
-    # writing the validation pairs into files for future evaluation
-    src_end_idx = source_tokenizer.word_index['<end>']
-    tar_end_idx = target_tokenizer.word_index['<end>']
 
     print("Writing the validation pairs into files for future evaluation")
     with open(os.path.join(ROOT_DIR, './data/pairs/val.lang1'), 'w', encoding="utf-8") as f:
@@ -112,8 +106,7 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
     valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
-    return train_dataset, valid_dataset, source_tokenizer, target_tokenizer, size_train, \
-           size_val, source_max_length, target_max_length
+    return train_dataset, valid_dataset, source_tokenizer, target_tokenizer, size_train, size_val
 
 
 def prepare_mbart_pretrain_pairs(path_corpus, batch_size=1, valid_ratio=0.1, seed=1234):
