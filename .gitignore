@@ -1,8 +1,5 @@
 /checkpoints
 /logs
-prediction.txt
-/data/pairs/val.lang1
-/data/pairs/val.lang2
 /data/corpus/corpus.multilingual
 /ckpt_base_transformer
 /ckpt_mBART_transformer
