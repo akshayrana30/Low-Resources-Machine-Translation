@@ -161,8 +161,8 @@ def prepare_mbart_finetune(path_corpus, path_source, path_target, batch_size=1, 
     corpus_tensor, corpus_tokenizer = tokenize(list_corpus, oov_token='[MASK]')
 
     # read data line by line with addition of "<En>", "<Fr>"
-    list_source = create_dataset(path_source, start="<En> ", end=" <En>")
-    list_target = create_dataset(path_target, start="<Fr> ", end=" <Fr>")
+    list_source = create_dataset(path_source, start="<en> ", end=" <en>")
+    list_target = create_dataset(path_target, start="<fr> ", end=" <fr>")
     print("Size of training pairs: %s" % (len(list_source)))
 
     # split the dataset into train and valid
@@ -171,8 +171,8 @@ def prepare_mbart_finetune(path_corpus, path_source, path_target, batch_size=1, 
                                                                           test_size=valid_ratio, random_state=seed)
 
     # encode text into index of words (only fit tokenizer on training set)
-    source_train, corpus_tokenizer.texts_to_sequences(source_train)
-    target_train, corpus_tokenizer.texts_to_sequences(target_train)
+    source_train = corpus_tokenizer.texts_to_sequences(source_train)
+    target_train = corpus_tokenizer.texts_to_sequences(target_train)
     source_val = corpus_tokenizer.texts_to_sequences(source_val)
     target_val = corpus_tokenizer.texts_to_sequences(target_val)
 
