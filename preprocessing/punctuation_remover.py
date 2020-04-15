@@ -39,8 +39,8 @@ def remove_punctuation(current_file, output):
     out_tokenized_path = os.path.join(output, file_name)
     tot_lines = 0
     removed_punctuations = 0
-    with open(current_file, 'r') as stream:
-        with open(out_tokenized_path, 'w') as out_tokenized_stream:
+    with open(current_file, 'r', encoding='utf-8') as stream:
+        with open(out_tokenized_path, 'w', encoding='utf-8') as out_tokenized_stream:
             for line in tqdm.tqdm(stream):
                 tot_lines += 1
                 tokens = line.strip().split()

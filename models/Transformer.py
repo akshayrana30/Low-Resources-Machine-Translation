@@ -9,17 +9,19 @@ import numpy as np
 
 
 class Transformer(tf.keras.Model):
-    def __init__(self, voc_size_src, voc_size_tar, src_max_length, tar_max_length, num_encoders, num_decoders,
+    def __init__(self, voc_size_src, voc_size_tar, max_pe, num_encoders, num_decoders,
                  emb_size, num_head, ff_inner=2048, p_dropout=0.1):
         super(Transformer, self).__init__()
-        self.embedding_src = tf.keras.layers.Embedding(voc_size_src, emb_size)
-        self.embedding_tar = tf.keras.layers.Embedding(voc_size_tar, emb_size)
+        self.emb_size = emb_size
 
-        self.position_encoding_src = PositionEncoding(src_max_length, emb_size)
-        self.position_encoding_tar = PositionEncoding(tar_max_length, emb_size)
+        self.embedding_src = tf.keras.layers.Embedding(voc_size_src, emb_size, mask_zero=True)
+        self.embedding_tar = tf.keras.layers.Embedding(voc_size_tar, emb_size, mask_zero=True)
+
+        self.position_encoding_src = PositionEncoding(max_pe, emb_size)
+        self.position_encoding_tar = PositionEncoding(max_pe, emb_size)
 
         self.encoders = TransformerEncoders(emb_size, num_head, num_encoders, ff_inner, p_dropout)
-        self.decoders = TransformerDecoders(emb_size, num_head, tar_max_length, num_decoders, ff_inner, p_dropout)
+        self.decoders = TransformerDecoders(emb_size, num_head, num_decoders, ff_inner, p_dropout)
 
         self.linear = tf.keras.layers.Dense(voc_size_tar)
 
@@ -29,9 +31,13 @@ class Transformer(tf.keras.Model):
 
     def call(self, inp_enc, inp_dec, training, enc_padding_mask,
              look_ahead_mask, dec_padding_mask):
+        # tf.print("inp", inp_enc)
+        # tf.print("enc p mask", enc_padding_mask)
         # embedding layer
         enc_output = self.embedding_src(inp_enc)
+        # tf.print("emb", enc_output)
         enc_output *= tf.math.sqrt(tf.cast(self.emb_size, tf.float32))
+        # tf.print("norl", enc_output)
         enc_output = self.dropout_enc(enc_output, training=training)
 
         dec_output = self.embedding_tar(inp_dec)
@@ -40,10 +46,12 @@ class Transformer(tf.keras.Model):
 
         # position encoding
         enc_output = self.position_encoding_src(enc_output)
+        # tf.print("enc pos", enc_output)
         dec_output = self.position_encoding_tar(dec_output)
 
         # encoders
         enc_output = self.encoders(enc_output, training, enc_padding_mask)
+        # tf.print("final enc", enc_output[:, 1:-2])
         # decoders
         dec_output = self.decoders(dec_output, training, enc_output, enc_output, look_ahead_mask, dec_padding_mask)
 
@@ -55,23 +63,26 @@ class Transformer(tf.keras.Model):
 class TransformerEncoders(tf.keras.layers.Layer):
     def __init__(self, emb_size, num_head, num_encoders=6, ff_inner=2048, p_dropout=0.1):
         super(TransformerEncoders, self).__init__()
+        self.num_encoders = num_encoders
         self.encoders = [EncoderUnit(emb_size, num_head, ff_inner, p_dropout) for _ in range(num_encoders)]
 
     def call(self, x, training, enc_padding_mask):
-        for encoder in self.encoders:
-            x = encoder(x, training, enc_padding_mask)
+        for i in range(self.num_encoders):
+            x = self.encoders[i](x, training, enc_padding_mask)
+            # tf.print("enc", x)
         return x
 
 
 class TransformerDecoders(tf.keras.layers.Layer):
-    def __init__(self, emb_size, num_head, tar_max_length, num_decoders=6, ff_inner=1024, p_dropout=0.1):
+    def __init__(self, emb_size, num_head, num_decoders=6, ff_inner=1024, p_dropout=0.1):
         super(TransformerDecoders, self).__init__()
-        self.decoders = [DecoderUnit(emb_size, num_head, tar_max_length, ff_inner, p_dropout) for _ in
+        self.num_decoders = num_decoders
+        self.decoders = [DecoderUnit(emb_size, num_head, ff_inner, p_dropout) for _ in
                          range(num_decoders)]
 
     def call(self, x, training, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask):
-        for decoder in self.decoders:
-            x = decoder(x, training, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask)
+        for i in range(self.num_decoders):
+            x = self.decoders[i](x, training, enc_output_k, enc_output_v, look_ahead_mask, dec_padding_mask)
         return x
 
 
@@ -96,9 +107,11 @@ class EncoderUnit(tf.keras.Model):
     def call(self, x, training, enc_padding_mask):
         # x => List of [num_batch, max_length, emb_size] * 3 as Q, K, V
         z = self.attention(x, x, x, enc_padding_mask)
+        # tf.print("z", tf.reduce_sum(z))
         z = self.dropout1(z, training=training)
         # Residual Connection and Layer Normalization (cuz x -> [x, x, x])
         z = self.layerNorm_multihead(z + x)
+        # tf.print("z", tf.reduce_sum(z))
         # Position-wise Feed-Forward Neural Network
         r = self.ffnn(z)
         r = self.dropout2(r, training=training)
@@ -108,7 +121,7 @@ class EncoderUnit(tf.keras.Model):
 
 
 class DecoderUnit(tf.keras.Model):
-    def __init__(self, emb_size, num_head, tar_max_length, ff_inner=2048, p_dropout=0.1):
+    def __init__(self, emb_size, num_head, ff_inner=2048, p_dropout=0.1):
         super(DecoderUnit, self).__init__()
 
         # masked multi-head attention
@@ -122,8 +135,6 @@ class DecoderUnit(tf.keras.Model):
         # position-wise feed-forward neural network layer
         self.ffnn = FeedForwardNN(ff_inner, emb_size)
         self.layerNorm_FFNN = tf.keras.layers.LayerNormalization()
-
-        self.tar_max_length = tar_max_length
 
         # regularization by dropout
         self.dropout1 = tf.keras.layers.Dropout(p_dropout)
@@ -207,6 +218,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         value = tf.transpose(value, perm=[0, 2, 1, 3])
 
         zs = self.subattentions(query, key, value, mask)
+        zs = tf.transpose(zs, perm=[0, 2, 1, 3])
         # convert back to [num_batch, max_length, num_head, qkv_size]
         # and reshape [num_batch, max_length, num_head * qkv_size]
         zs = tf.reshape(zs, [num_batch, -1, self.emb_size])
