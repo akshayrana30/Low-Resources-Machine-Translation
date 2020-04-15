@@ -13,7 +13,8 @@ reverse_translate=False
 add_synthetic_data=True
 load_emb = False
 emb_size = 256
-BATCH_SIZE = 128
+train_batch_size = 128
+val_batch_size = 128
 
 num_layers = 4 #6
 d_model = 256  #512

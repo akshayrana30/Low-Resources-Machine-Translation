@@ -27,13 +27,12 @@ def load_dataset():
 
     max_length_targ, max_length_inp = max_length(target_train), max_length(input_train)
     BUFFER_SIZE = input_train.shape[0]
-    steps_per_epoch = input_train.shape[0]//BATCH_SIZE
 
     train_dataset = tf.data.Dataset.from_tensor_slices((input_train, target_train)).shuffle(BUFFER_SIZE)
-    train_dataset = train_dataset.batch(BATCH_SIZE, drop_remainder=True)
+    train_dataset = train_dataset.batch(train_batch_size, drop_remainder=True)
 
     val_dataset = tf.data.Dataset.from_tensor_slices((input_val, target_val)).shuffle(BUFFER_SIZE)
-    val_dataset = val_dataset.batch(BATCH_SIZE, drop_remainder=True)
+    val_dataset = val_dataset.batch(val_batch_size, drop_remainder=True)
 
     return train_dataset, val_dataset, input_tokenizer, target_tokenizer, \
     e_emb, d_emb, max_length_inp, max_length_targ
@@ -167,7 +166,7 @@ def train():
             gold_file_path = root_path+"en_fr_backtrans_256_gold_epoch_"+str(epoch+1)+".txt"
             pred_file_path = root_path+"en_fr_backtrans_256_preds_epoch_"+str(epoch+1)+".txt"
             get_scores(gold_file_path, pred_file_path, target_tokenizer, 
-                        val_dataset, transformer, BATCH_SIZE, max_length_targ)
+                        val_dataset, transformer, val_batch_size, max_length_targ)
 
 if __name__ == "__main__":
     train()
