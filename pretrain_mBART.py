@@ -116,7 +116,7 @@ def main(argv):
     def train_step(inp):
         # set target
         tar_inp = inp[:, :-1]
-        tar_real = inp[:, 1:]
+        tar_real = inp[:, 2:]
         # remember the padding
         pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, -1)), tf.int32)
         en = tf.math.equal(inp, sp.piece_to_id('<En>'))
@@ -157,7 +157,7 @@ def main(argv):
     def valid_step(inp):
         # set target
         tar_inp = inp[:, :-1]
-        tar_real = inp[:, 1:]
+        tar_real = inp[:, 2:]
         # remember the padding
         pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, -1)), tf.int32)
         en = tf.math.equal(inp, sp.piece_to_id('<En>'))

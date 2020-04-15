@@ -138,12 +138,12 @@ def prepare_mbart_pretrain_pairs(path_corpus, path_spm, batch_size=1, valid_rati
     train_dataset = tf.data.Dataset.from_generator(lambda: iter(source_train), output_types=tf.int32).padded_batch(
         batch_size,
         padded_shapes=[
-            None], padding_values=-1).shuffle(size_train)
+            None], padding_values=-1).shuffle(buffer_size=10000)
 
     valid_dataset = tf.data.Dataset.from_generator(lambda: iter(source_val), output_types=tf.int32).padded_batch(
         batch_size,
         padded_shapes=[
-            None], padding_values=-1).shuffle(size_val)
+            None], padding_values=-1).shuffle(buffer_size=10000)
 
     train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
     valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)

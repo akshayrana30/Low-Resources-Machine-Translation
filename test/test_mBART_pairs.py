@@ -30,7 +30,7 @@ count = 1
 for src in train_dataset:
     src = src[0]
     tar_inp = src[:-1]
-    tar_real = src[1:]
+    tar_real = src[2:]
     print("src sentence:", sp.DecodeIds((tf.squeeze(src).numpy().tolist())))
     # remember the padding
     pad = tf.cast(tf.math.logical_not(tf.math.equal(src, -1)), tf.int32)
