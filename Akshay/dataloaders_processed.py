@@ -1,4 +1,4 @@
-  
+    
 
 import io
 import re
@@ -131,8 +131,8 @@ def load_data(reverse_translate=False, add_synthetic_data=False,
   
   if load_emb:
     print("-- Loading embedding --")
-    e_emb = load_embeddings("emb_en_"+str(emb_size)+".pkl")
-    d_emb = load_embeddings("emb_fr_"+str(emb_size)+".pkl")
+    e_emb = load_embeddings("emb_en_"+str(emb_size)+"_20k.pkl")
+    d_emb = load_embeddings("emb_fr_"+str(emb_size)+"_20k.pkl")
   else:
     print("-- Skipping embeddings --")
     e_emb, d_emb = None, None
@@ -162,7 +162,7 @@ def load_data(reverse_translate=False, add_synthetic_data=False,
   output_val = pad_sequences(output_val, padding='post', maxlen=output_train.shape[1])
 
   return input_train, input_val, input_aligned_val, input_tokenizer, e_emb, \
-         output_train, output_val, output_aligned_val, output_tokenizer, d_emb
+        output_train, output_val, output_aligned_val, output_tokenizer, d_emb
 
 if __name__ == "__main__":
   pass
