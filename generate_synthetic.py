@@ -59,8 +59,8 @@ def generate_predictions(ckpt, path_spm, input_file_path: str, pred_file_path: s
 def main():
     parser = argparse.ArgumentParser(
         'script to create synthetic data for backtranslation.')
-    parser.add_argument('--input', help='file to be translated')
-    parser.add_argument('--output', help='path to outputs - will store files here',
+    parser.add_argument('--inp', help='file to be translated')
+    parser.add_argument('--out', help='path to outputs - will store files here',
                         required=True)
     parser.add_argument('--ckpt', help='file to be translated')
     parser.add_argument('--spm', help='path to outputs - will store files here')
