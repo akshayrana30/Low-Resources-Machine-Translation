@@ -23,7 +23,7 @@ flags.DEFINE_string('target', './data/pairs/train.lang2',
                     'path of target language')
 flags.DEFINE_string('spm', './data/preprocessing/m.model',
                     'path of sentencepiece model')
-flags.DEFINE_bool('load_mBart', True,
+flags.DEFINE_bool('load_mBart', False,
                   'load pretrain mBart or not')
 flags.DEFINE_string('mbartckpt', './ckpt_pretrain_mBART',
                     'path of target language')
