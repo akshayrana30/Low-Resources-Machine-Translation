@@ -35,6 +35,7 @@ for src, tar in valid_dataset:
     tar = tar[0]
     tar_inp = src[:-2]
     tar_real = src[2:]
+    print(sp.piece_to_id("<Fr>"))
     print("src tensor:", tf.squeeze(src).numpy())
     print("src sentence:", sp.DecodeIds((tf.squeeze(src).numpy().tolist())))
     print("target tensor:", tf.squeeze(tar).numpy())
@@ -43,5 +44,5 @@ for src, tar in valid_dataset:
     print("tar real sentence:", sp.DecodeIds((tf.squeeze(tar_real).numpy().tolist())))
     print("-----------------------------------------------")
     count+=1
-    if count > 5:
+    if count > 20:
         break
