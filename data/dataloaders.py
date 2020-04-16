@@ -72,10 +72,11 @@ def prepare_training_pairs(path_source,
     if path_syn_source and path_syn_target:
         list_syn_source = create_dataset(path_syn_source, start=src + " ", end=" " + src)
         list_syn_target = create_dataset(path_syn_target, start=src + " ", end=" " + src)
+        list_syn_source = list(map(sp.EncodeAsIds, list_syn_source))
+        list_syn_target = list(map(sp.EncodeAsIds, list_syn_target[:len(list_syn_source)]))
         print("Sample syn source", list_syn_source[0])
         print("Sample syn target", list_syn_target[0])
-        list_syn_source = list(map(sp.EncodeAsIds, list_syn_source))
-        list_syn_target = list(map(sp.EncodeAsIds, list_syn_target))
+        assert len(list_syn_source) == len(list_syn_target)
 
         # combine synthetic
         source_train = source_train + list_syn_source
