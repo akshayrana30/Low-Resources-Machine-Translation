@@ -1,10 +1,9 @@
-import os
 import argparse
 import logging
-from evaluator import generate_predictions
+import sentencepiece as spm
 
 
-def generate_predictions(ckpt, path_spm, input_file_path: str, pred_file_path: str):
+def generate_predictions(ckpt, path_spm, input_file_path: str, pred_file_path: str, reverse=False):
     """Generates predictions for the machine translation task (EN->FR).
     You are allowed to modify this function as needed, but one again, you cannot
     modify any other part of this file. We will be importing only this function
@@ -42,6 +41,9 @@ def generate_predictions(ckpt, path_spm, input_file_path: str, pred_file_path: s
     status = checkpoint.restore(tf.train.latest_checkpoint(ckpt_dir))
     status.assert_existing_objects_matched()
 
+    sp = spm.SentencePieceProcessor()
+    sp.Load(path_spm)
+
     # Greedy Search / Beam Search and write to pred_file_path
     import time
     from translate import translate_batch
@@ -49,7 +51,7 @@ def generate_predictions(ckpt, path_spm, input_file_path: str, pred_file_path: s
     with open(pred_file_path, 'w', encoding='utf-8') as pred_file:
         for (batch, (inp)) in enumerate(test_dataset):
             print("Evaluating Batch: %s" % batch)
-            translation = translate_batch(inp, batch_size=BATCH_SIZE)
+            translation = translate_batch(model, inp, BATCH_SIZE, spm, reverse=reverse)
             for sentence in translation:
                 pred_file.write(sentence.strip() + '\n')
     end = time.time()
@@ -63,11 +65,12 @@ def main():
     parser.add_argument('--output', help='path to outputs - will store files here')
     parser.add_argument('--ckpt', help='file to be translated')
     parser.add_argument('--spm', help='path to outputs - will store files here')
+    parser.add_argument('--reverse', help='FR to EN?')
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
 
     # Todo: Remember to modified the path of checkpoints in evaluator.py
-    generate_predictions(args.ckpt, args.spm, args.input, args.output)
+    generate_predictions(args.ckpt, args.spm, args.input, args.output, args.reverse)
 
 
 if __name__ == '__main__':
