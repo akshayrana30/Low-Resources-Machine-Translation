@@ -196,9 +196,9 @@ def main(argv):
     if not FLAGS.load_mBart:
         print("Load previous checkpoints...")
         status = ckpt.restore(manager.latest_checkpoint)
-        status.assert_existing_objects_matched()
         if manager.latest_checkpoint:
             logging.info("Restored from {}".format(manager.latest_checkpoint))
+            status.assert_existing_objects_matched()
         else:
             logging.info("Initializing from scratch.")
 
