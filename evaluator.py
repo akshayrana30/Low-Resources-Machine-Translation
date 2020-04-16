@@ -21,11 +21,45 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
         pred_file_path: the file path where to store the predictions.
     Returns: None
     """
+    # load input file => create test dataloader => (spm encode)
+    from data.dataloaders import prepare_test
+    BATCH_SIZE = 128
+    MAX_LENGTH = 200
+    path_spm = "./preprocessing/m.model"
+    test_dataset, voc_size, test_max_length = prepare_test(input_file_path, path_spm, batch_size=BATCH_SIZE)
+    # create model
+    from models import mBART
+    import tensorflow as tf
+    src_vocsize = voc_size
+    tar_vocsize = voc_size
+    optimizer = tf.keras.optimizers.Adam()
+    model = mBART.mBART(voc_size_src=src_vocsize,
+                        voc_size_tar=tar_vocsize,
+                        max_pe=10000,
+                        num_encoders=4,
+                        num_decoders=4,
+                        emb_size=512,
+                        num_head=8,
+                        ff_inner=1024)
 
-    ##### MODIFY BELOW #####
-    # Warp the test_evaluation.py as a function in here
-    pass
-    ##### MODIFY ABOVE #####
+    # Load CheckPoint
+    ckpt_dir = "../ckpt_BT/"
+    checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
+    status = checkpoint.restore(tf.train.latest_checkpoint(ckpt_dir))
+    status.assert_existing_objects_matched()
+
+    # Greedy Search / Beam Search and write to pred_file_path
+    import time
+    start = time.time()
+    with open(pred_file_path, 'w', encoding='utf-8') as pred_file:
+        for (batch, (inp)) in enumerate(test_dataset):
+            print("Evaluating Batch: %s" % batch)
+            translation = []
+            # translation = translate_batch(inp, batch_size=BATCH_SIZE, test_max_length)
+            for sentence in translation:
+                pred_file.write(sentence.strip() + '\n')
+    end = time.time()
+    print("Translation finish in %s s"%(end-start))
 
 
 def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: bool):

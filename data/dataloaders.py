@@ -150,15 +150,20 @@ def prepare_mbart_pretrain_pairs(path_corpus, path_spm, batch_size=1, valid_rati
     return train_dataset, valid_dataset, size_train, size_val, corpus_max_length
 
 
-def prepare_test(path_test, source_tokenizer, batch_size=1):
+def prepare_test(path_test, path_spm, batch_size=1):
     # read lines in test files
     list_source = create_dataset(path_test)
-    source_test = source_tokenizer.texts_to_sequences(list_source)
+    sp = spm.SentencePieceProcessor()
+    sp.Load(path_spm)
+    # encode sentences into id
+    source_test = list(map(sp.EncodeAsIds, list_source))
     size_test = len(source_test)
+    test_max_length = max_length(source_test)
     print("Size of test: %s" % size_test)
+    print("Max length of test set: %s" %test_max_length)
 
     # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
     test_dataset = tf.data.Dataset.from_generator(lambda: iter(source_test), tf.int32).padded_batch(batch_size,
                                                                                                     padded_shapes=[
                                                                                                         None])
-    return test_dataset
+    return test_dataset, len(sp), test_max_length
