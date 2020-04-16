@@ -52,19 +52,21 @@ def load_lang(lang_path):
   return io.open(root_path+lang_path, encoding='UTF-8').read().strip().split('\n')
 
 
-def dataloader_unaligned():
+def dataloader_unaligned(preprocess=True):
   unaligned_en = load_lang(unaligned_en_path)
   unaligned_fr = load_lang(unaligned_fr_path)
-  unaligned_en = [preprocess_sentence(x, "en", aligned=False) for x in unaligned_en]
-  unaligned_fr = [preprocess_sentence(x, "fr", aligned=False) for x in unaligned_fr]
+  if preprocess:
+    unaligned_en = [preprocess_sentence(x, "en", aligned=False) for x in unaligned_en]
+    unaligned_fr = [preprocess_sentence(x, "fr", aligned=False) for x in unaligned_fr]
   return unaligned_en, unaligned_fr
 
 
-def dataloader_aligned(add_special_tag=True):
+def dataloader_aligned(preprocess=True, add_special_tag=True):
   aligned_en = load_lang(aligned_en_path)
   aligned_fr = load_lang(aligned_fr_path)
-  aligned_en = [preprocess_sentence(x, "en", aligned=True, add_special_tag=add_special_tag) for x in aligned_en]
-  aligned_fr = [preprocess_sentence(x, "fr", aligned=True, add_special_tag=add_special_tag) for x in aligned_fr]
+  if preprocess:
+    aligned_en = [preprocess_sentence(x, "en", aligned=True, add_special_tag=add_special_tag) for x in aligned_en]
+    aligned_fr = [preprocess_sentence(x, "fr", aligned=True, add_special_tag=add_special_tag) for x in aligned_fr]
   return aligned_en, aligned_fr
 
 
@@ -111,9 +113,13 @@ def load_data(reverse_translate=False, add_synthetic_data=False,
   print("-- Loading Datafiles --")
   unaligned_en, unaligned_fr = dataloader_unaligned()
   aligned_en, aligned_fr = dataloader_aligned()
-
   input_aligned_train, input_aligned_val, \
   output_aligned_train, output_aligned_val = train_val_split(aligned_en, aligned_fr)
+
+  # To use for Bleu score in the end
+  aligned_en_org, aligned_fr_org = dataloader_aligned(preprocess=False)
+  input_aligned_train_org, input_aligned_val_org, \
+  output_aligned_train_org, output_aligned_val_org = train_val_split(aligned_en_org, aligned_fr_org)
 
   print("-- Creating Vocabulary and Tokenizing --")
   input_train, input_tokenizer = tokenize(input_aligned_train, unaligned_en, inp_vocab_size)
@@ -141,17 +147,21 @@ def load_data(reverse_translate=False, add_synthetic_data=False,
       input_train, \
       input_tokenizer, \
       input_aligned_val, \
+      input_aligned_val_org, \
       e_emb, \
       output_train, \
       output_tokenizer, \
       output_aligned_val, \
+      output_aligned_val_org, \
       d_emb  = output_train, \
               output_tokenizer, \
               output_aligned_val, \
+              output_aligned_val_org, \
               d_emb, \
               input_train, \
               input_tokenizer, \
               input_aligned_val, \
+              input_aligned_val_org, \
               e_emb
 
   print("-- Tokenizing Validation set --")
@@ -161,27 +171,6 @@ def load_data(reverse_translate=False, add_synthetic_data=False,
   output_val = output_tokenizer.texts_to_sequences(output_aligned_val)
   output_val = pad_sequences(output_val, padding='post', maxlen=output_train.shape[1])
 
-  return input_train, input_val, input_aligned_val, input_tokenizer, e_emb, \
-        output_train, output_val, output_aligned_val, output_tokenizer, d_emb
-
-if __name__ == "__main__":
-  pass
-  # inp_vocab_size=20000
-  # tar_vocab_size=20000
-  # reverse_translate=False
-  # add_synthetic_data=True
-  # load_emb = True
-  # emb_size = 256
-
-  # input_train, input_val, \
-  # input_text_val, \
-  # input_tokenizer, e_emb, \
-  # target_train, target_val, \
-  # target_text_val, \
-  # target_tokenizer, d_emb = load_data(reverse_translate, 
-  #                                       add_synthetic_data,
-  #                                       load_emb,
-  #                                       inp_vocab_size, 
-  #                                       tar_vocab_size,
-  #                                       emb_size)
+  return input_train, input_val, input_aligned_val_org, input_tokenizer, e_emb, \
+        output_train, output_val, output_aligned_val_org, output_tokenizer, d_emb
 

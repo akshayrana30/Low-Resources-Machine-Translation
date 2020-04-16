@@ -4,7 +4,7 @@ import time
 import tensorflow as tf
 from Transformers_Google import *
 from evaluation import * 
-import dataloaders_processed as d
+from dataloaders_processed import *
 from config import *
 
 
@@ -18,7 +18,7 @@ def load_dataset():
     input_tokenizer, e_emb, \
     target_train, target_val, \
     target_text_val, \
-    target_tokenizer, d_emb = d.load_data(reverse_translate, 
+    target_tokenizer, d_emb = load_data(reverse_translate, 
                                         add_synthetic_data,
                                         load_emb,
                                         inp_vocab_size, 
@@ -31,11 +31,11 @@ def load_dataset():
     train_dataset = tf.data.Dataset.from_tensor_slices((input_train, target_train)).shuffle(BUFFER_SIZE)
     train_dataset = train_dataset.batch(train_batch_size, drop_remainder=True)
 
-    val_dataset = tf.data.Dataset.from_tensor_slices((input_val, target_val)).shuffle(BUFFER_SIZE)
+    val_dataset = tf.data.Dataset.from_tensor_slices((input_val, target_val))
     val_dataset = val_dataset.batch(val_batch_size, drop_remainder=True)
 
     return train_dataset, val_dataset, input_tokenizer, target_tokenizer, \
-    e_emb, d_emb, max_length_inp, max_length_targ
+    e_emb, d_emb, max_length_inp, max_length_targ, target_text_val
 
 
 def loss_function(real, pred):
@@ -93,7 +93,7 @@ def max_length(tensor):
 def train():
     train_dataset, val_dataset, input_tokenizer, \
     target_tokenizer, e_emb, d_emb, \
-    max_length_inp, max_length_targ = load_dataset()
+    max_length_inp, max_length_targ, target_text_val = load_dataset()
     print("-- Tf Dataset created --")
 
     learning_rate = CustomSchedule(d_model)
@@ -163,11 +163,56 @@ def train():
                                                                 ckpt_save_path))
 
         if (epoch+1)%evaluate_bleu_every==0:
-            gold_file_path = root_path+"en_fr_backtrans_256_gold_epoch_"+str(epoch+1)+".txt"
-            pred_file_path = root_path+"en_fr_backtrans_256_preds_epoch_"+str(epoch+1)+".txt"
+            gold_file_path = root_path+"temp_gold_epoch_"+str(epoch+1)+".txt"
+            pred_file_path = root_path+"temp_pred_epoch_"+str(epoch+1)+".txt"
             get_scores(gold_file_path, pred_file_path, target_tokenizer, 
-                        val_dataset, transformer, val_batch_size, max_length_targ)
+                        val_dataset, target_text_val, transformer, val_batch_size, max_length_targ)
+
+    return transformer, input_tokenizer, target_tokenizer, max_length_inp, max_length_targ
+
+
+def generate(transformer, input_tokenizer, target_tokenizer, max_length_inp, max_length_targ):
+    if reverse_translate:
+        # input is french, and output is english
+        output_lang, input_lang = dataloader_unaligned()
+        print("-- Preparing data to translate English to French --")
+    else:
+        # input is english, and output is French
+        input_lang, output_lang = dataloader_unaligned()
+        print("-- Preparing data to translate French to English --")
+
+    input_path = generate_input_path
+    output_path = generate_output_path
+
+    sorted_lines = [x for x in sorted(input_lang, key = len)]
+    filtered_lines = sorted_lines[250000:250000+20000] + sorted_lines[350000:350000+20000] + sorted_lines[400000:400000+20000]
+    
+    import random
+    random.shuffle(filtered_lines)
+    
+    input_lang = input_tokenizer.texts_to_sequences(filtered_lines)
+    input_lang = tf.keras.preprocessing.sequence.pad_sequences(input_lang,
+                                                               padding='post', 
+                                                               maxlen=max_length_inp)
+    
+
+    new_dataset = tf.data.Dataset.from_tensor_slices(input_lang).shuffle(val_batch_size)
+    new_dataset = new_dataset.batch(val_batch_size, drop_remainder=True)
+
+    print("-- Dataset Generated for translation --")
+    generate_evaluations(transformer, input_path, 
+                        output_path, new_dataset, 
+                        input_tokenizer, target_tokenizer, 
+                        max_length_targ)
+
+
+
 
 if __name__ == "__main__":
-    train()
-
+        transformer, input_tokenizer, \
+        target_tokenizer, max_length_inp, max_length_targ = train()
+        if generate_samples:
+            generate(transformer, input_tokenizer, target_tokenizer, max_length_inp, max_length_targ)
+            
+            
+            
