@@ -64,6 +64,8 @@ def prepare_training_pairs(path_source, path_target, path_spm, batch_size=1, val
     # read data line by line with addition of "<start>", "<end>"
     list_source = create_dataset(path_source, start=src + " ", end=" " + src)
     list_target = create_dataset(path_target, start=tar + " ", end=" " + tar)
+    print("Sample source", list_source[0])
+    print("Sample target", list_target[0])
     print("Size of training pairs: %s" % (len(list_source)))
     sp = spm.SentencePieceProcessor()
     sp.Load(path_spm)
@@ -150,9 +152,9 @@ def prepare_mbart_pretrain_pairs(path_corpus, path_spm, batch_size=1, valid_rati
     return train_dataset, valid_dataset, size_train, size_val, corpus_max_length
 
 
-def prepare_test(path_test, path_spm, batch_size=1):
+def prepare_test(path_test, path_spm, batch_size=1,  src="<En>"):
     # read lines in test files
-    list_source = create_dataset(path_test)
+    list_source = create_dataset(path_test, start=src + " ", end=" " + src)
     sp = spm.SentencePieceProcessor()
     sp.Load(path_spm)
     # encode sentences into id

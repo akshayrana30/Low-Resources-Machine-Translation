@@ -17,9 +17,9 @@ from models import mBART, Transformer
 import sentencepiece as spm
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string('source', './data/pairs/train.lang2',
+flags.DEFINE_string('source', './data/pairs/train.lang1',
                     'path of source language')
-flags.DEFINE_string('target', './data/pairs/train.lang1',
+flags.DEFINE_string('target', './data/pairs/train.lang2',
                     'path of target language')
 flags.DEFINE_string('spm', './data/preprocessing/m.model',
                     'path of sentencepiece model')
@@ -57,9 +57,7 @@ def main(argv):
                                                                                 FLAGS.target,
                                                                                 FLAGS.spm,
                                                                                 batch_size=FLAGS.batch_size,
-                                                                                valid_ratio=0.1,
-                                                                                src="<Fr>",
-                                                                                tar="<En>")
+                                                                                valid_ratio=0.1)
 
     # calculate vocabulary size
     sp = spm.SentencePieceProcessor()
@@ -189,7 +187,7 @@ def main(argv):
 
     # ----------------------------------------------------------------------------------
     # Set up Checkpoints, so as to resume training if something interrupt, and save results
-    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_BT_FREN_transformer")
+    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_BT_ENFR_transformer")
     ckpt = tf.train.Checkpoint(optimizer=optimizer, model=model)
     manager = tf.train.CheckpointManager(
         ckpt, directory=FLAGS.ckpt, max_to_keep=2
@@ -208,8 +206,8 @@ def main(argv):
     # Setup the TensorBoard for better visualization
     logging.info("Setup the TensorBoard...")
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    train_log_dir = './logs/gradient_tape/' + current_time + '/BT_FREN_transformer_train'
-    test_log_dir = './logs/gradient_tape/' + current_time + '/BT_FREN_transformer_test'
+    train_log_dir = './logs/gradient_tape/' + current_time + '/BT_ENFR_transformer_train'
+    test_log_dir = './logs/gradient_tape/' + current_time + '/BT_ENFR_transformer_test'
     train_summary_writer = tf.summary.create_file_writer(train_log_dir)
     test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
