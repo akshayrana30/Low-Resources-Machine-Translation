@@ -22,10 +22,10 @@ def translate_batch(model, inp, batch_size, spm, reverse=False):
         combined_mask = tf.maximum(dec_target_padding_mask, look_ahead_mask)
 
         # mask for "enc_dec" multihead attention
-        dec_padding_mask = Transformer.create_padding_mask(input)
+        dec_padding_mask = Transformer.create_padding_mask(inp)
 
         # predictions.shape == (batch_size, seq_len, vocab_size)
-        predictions = model(input,
+        predictions = model(inp,
                             output,
                             False,
                             enc_padding_mask,
