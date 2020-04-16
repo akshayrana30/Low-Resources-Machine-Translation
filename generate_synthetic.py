@@ -70,7 +70,7 @@ def main():
         os.makedirs(args.output)
 
     # Todo: Remember to modified the path of checkpoints in evaluator.py
-    generate_predictions(args.ckpt, args.path_spm,args.output, args.output)
+    generate_predictions(args.ckpt, args.spm, args.input, args.output)
 
 
 if __name__ == '__main__':
