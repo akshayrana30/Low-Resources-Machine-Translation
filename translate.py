@@ -39,5 +39,5 @@ def translate_batch(model, inp, batch_size, spm, reverse=False):
         output = tf.concat([output, predicted_id], axis=-1)
     id_list = output.numpy().tolist()
     pred_sentences = [spm.DecodeIds(s) for s in id_list]
-    pred_sentences = [x.split(LID)[0].replace(LID, "").strip() for x in pred_sentences]
+    pred_sentences = [x.replace(LID, "").strip() for x in pred_sentences]
     return pred_sentences
