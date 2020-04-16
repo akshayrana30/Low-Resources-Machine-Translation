@@ -63,7 +63,7 @@ def main():
     parser.add_argument('--output', help='path to outputs - will store files here',
                         required=True)
     parser.add_argument('--ckpt', help='file to be translated')
-    parser.add_argument('--path_spm', help='path to outputs - will store files here')
+    parser.add_argument('--spm', help='path to outputs - will store files here')
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
 
