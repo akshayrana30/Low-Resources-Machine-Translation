@@ -23,6 +23,10 @@ flags.DEFINE_string('target', './data/pairs/train.lang1',
                     'path of target language')
 flags.DEFINE_string('spm', './data/preprocessing/m.model',
                     'path of sentencepiece model')
+flags.DEFINE_string('syn_src', None,
+                    'path of source language')
+flags.DEFINE_string('syn_tar', None,
+                    'path of target language')
 flags.DEFINE_bool('load_mBart', False,
                   'load pretrain mBart or not')
 flags.DEFINE_string('mbartckpt', './ckpt_pretrain_mBART',
@@ -56,6 +60,8 @@ def main(argv):
     train_dataset, valid_dataset, size_train, size_val = prepare_training_pairs(FLAGS.source,
                                                                                 FLAGS.target,
                                                                                 FLAGS.spm,
+                                                                                FLAGS.syn_src,
+                                                                                FLAGS.syn_tar,
                                                                                 batch_size=FLAGS.batch_size,
                                                                                 valid_ratio=0.1,
                                                                                 src="<Fr>",
