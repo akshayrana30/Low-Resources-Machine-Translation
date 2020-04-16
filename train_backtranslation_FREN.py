@@ -14,25 +14,26 @@ from absl import logging
 
 from data.dataloaders import prepare_training_pairs
 from models import mBART, Transformer
+import sentencepiece as spm
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string('corpus', './data/corpus/corpus.multilingual',
+flags.DEFINE_string('source', './data/pairs/train.lang2',
                     'path of source language')
-flags.DEFINE_string('source', './data/pairs/train.lang1',
-                    'path of source language')
-flags.DEFINE_string('target', './data/pairs/train.lang2',
+flags.DEFINE_string('target', './data/pairs/train.lang1',
                     'path of target language')
+flags.DEFINE_string('spm', './data/preprocessing/m.model',
+                    'path of sentencepiece model')
 flags.DEFINE_bool('load_mBart', True,
                   'load pretrain mBart or not')
 flags.DEFINE_string('mbartckpt', './ckpt_pretrain_mBART',
                     'path of target language')
-flags.DEFINE_string('ckpt', './ckpt_mBART_transformer',
+flags.DEFINE_string('ckpt', './ckpt_BT',
                     'path of target language')
 flags.DEFINE_integer('seed', 1234,
                      'random seed for reproducible result')
 flags.DEFINE_integer('epochs', 100,
                      'number of epochs')
-flags.DEFINE_integer('batch_size', 32,
+flags.DEFINE_integer('batch_size', 64,
                      'batch size')
 flags.DEFINE_integer('num_enc', 8,
                      'number of stacked encoder')
@@ -52,15 +53,17 @@ def main(argv):
     # Creating dataloaders for training and validation
     logging.info("Creating the source dataloader from: %s" % FLAGS.source)
     logging.info("Creating the target dataloader from: %s" % FLAGS.target)
-    train_dataset, valid_dataset, corpus_tokenizer, size_train, size_val = prepare_mbart_finetune(FLAGS.corpus,
-                                                                                                  FLAGS.source,
-                                                                                                  FLAGS.target,
-                                                                                                  batch_size=FLAGS.batch_size,
-                                                                                                  valid_ratio=0.1)
+    train_dataset, valid_dataset, size_train, size_val = prepare_training_pairs(FLAGS.source,
+                                                                                FLAGS.target,
+                                                                                FLAGS.spm,
+                                                                                batch_size=FLAGS.batch_size,
+                                                                                valid_ratio=0.1)
 
     # calculate vocabulary size
-    src_vocsize = len(corpus_tokenizer.word_index) + 1
-    tar_vocsize = len(corpus_tokenizer.word_index) + 1
+    sp = spm.SentencePieceProcessor()
+    sp.Load(FLAGS.spm)
+    src_vocsize = len(sp)
+    tar_vocsize = len(sp)
     # ----------------------------------------------------------------------------------
     # Creating the instance of the model specified.
     logging.info("Create Transformer Model")
@@ -76,6 +79,7 @@ def main(argv):
 
     # load pretrained mBart
     if FLAGS.load_mBart:
+        print("Load Pretraining mBART...")
         mbart_ckpt_dir = FLAGS.mbartckpt
         latest = tf.train.latest_checkpoint(mbart_ckpt_dir)
 
@@ -183,25 +187,27 @@ def main(argv):
 
     # ----------------------------------------------------------------------------------
     # Set up Checkpoints, so as to resume training if something interrupt, and save results
-    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_mBART_transformer")
+    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_BT_transformer")
     ckpt = tf.train.Checkpoint(optimizer=optimizer, model=model)
     manager = tf.train.CheckpointManager(
         ckpt, directory=FLAGS.ckpt, max_to_keep=2
     )
     # restore from latest checkpoint and iteration
-    status = ckpt.restore(manager.latest_checkpoint)
-    status.assert_existing_objects_matched()
-    if manager.latest_checkpoint:
-        logging.info("Restored from {}".format(manager.latest_checkpoint))
-    else:
-        logging.info("Initializing from scratch.")
+    if not FLAGS.load_mBart:
+        print("Load previous checkpoints...")
+        status = ckpt.restore(manager.latest_checkpoint)
+        status.assert_existing_objects_matched()
+        if manager.latest_checkpoint:
+            logging.info("Restored from {}".format(manager.latest_checkpoint))
+        else:
+            logging.info("Initializing from scratch.")
 
     # ----------------------------------------------------------------------------------
     # Setup the TensorBoard for better visualization
     logging.info("Setup the TensorBoard...")
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    train_log_dir = './logs/gradient_tape/' + current_time + '/mbart_transformer_train'
-    test_log_dir = './logs/gradient_tape/' + current_time + '/mbart_transformer_test'
+    train_log_dir = './logs/gradient_tape/' + current_time + '/BT_transformer_train'
+    test_log_dir = './logs/gradient_tape/' + current_time + '/BT_transformer_test'
     train_summary_writer = tf.summary.create_file_writer(train_log_dir)
     test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
@@ -245,5 +251,7 @@ def main(argv):
                                                                                                  train_accuracy.result()))
 
         logging.info('Time taken for 1 train_step {} sec\n'.format(time.time() - start))
+
+
 if __name__ == '__main__':
     app.run(main)
