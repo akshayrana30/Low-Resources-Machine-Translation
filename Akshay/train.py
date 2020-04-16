@@ -175,17 +175,20 @@ def generate(transformer, input_tokenizer, target_tokenizer, max_length_inp, max
     if reverse_translate:
         # input is french, and output is english
         output_lang, input_lang = dataloader_unaligned()
-        print("-- Preparing data to translate English to French --")
+        print("-- Preparing data to translate French to English --")
     else:
         # input is english, and output is French
         input_lang, output_lang = dataloader_unaligned()
-        print("-- Preparing data to translate French to English --")
+        print("-- Preparing data to translate English to French  --")
 
     input_path = generate_input_path
     output_path = generate_output_path
 
     sorted_lines = [x for x in sorted(input_lang, key = len)]
-    filtered_lines = sorted_lines[250000:250000+20000] + sorted_lines[350000:350000+20000] + sorted_lines[400000:400000+20000]
+    n = int(number_of_samples/3)
+    filtered_lines = sorted_lines[250000:250000+n] + \
+                     sorted_lines[350000:350000+n] + \
+                     sorted_lines[400000:400000+n]
     
     import random
     random.shuffle(filtered_lines)

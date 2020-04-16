@@ -100,7 +100,7 @@ def generate_evaluations(transformer, input_path, output_path,
                          dataset, inp_lang_tokenizer, targ_lang_tokenizer, max_length_targ):
     with open(input_path, 'w', encoding='utf-8', buffering=1) as i_file, open(output_path, 'w', encoding='utf-8', buffering=1) as o_file:
         for batch, inp in enumerate(dataset):
-            if batch%100==0:
+            if batch%50==0:
                 print("Generating for batch", batch)
             predicted = translate_batch(inp, targ_lang_tokenizer, transformer,
                                         dataset._batch_size.numpy(), max_length_targ)
