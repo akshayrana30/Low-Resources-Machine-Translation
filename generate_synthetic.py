@@ -51,7 +51,7 @@ def generate_predictions(ckpt, path_spm, input_file_path: str, pred_file_path: s
     with open(pred_file_path, 'w', encoding='utf-8') as pred_file:
         for (batch, (inp)) in enumerate(test_dataset):
             print("Evaluating Batch: %s" % batch)
-            translation = translate_batch(model, inp, BATCH_SIZE, spm, reverse=reverse)
+            translation = translate_batch(model, inp, BATCH_SIZE, sp, reverse=reverse)
             for sentence in translation:
                 pred_file.write(sentence.strip() + '\n')
     end = time.time()
