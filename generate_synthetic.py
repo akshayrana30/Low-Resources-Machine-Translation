@@ -54,6 +54,7 @@ def generate_predictions(ckpt, path_spm, input_file_path: str, pred_file_path: s
             translation = translate_batch(model, inp, BATCH_SIZE, sp, reverse=reverse)
             for sentence in translation:
                 pred_file.write(sentence.strip() + '\n')
+                pred_file.flush()
     end = time.time()
     print("Translation finish in %s s" % (end - start))
 
