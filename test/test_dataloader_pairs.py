@@ -33,8 +33,8 @@ count = 0
 for src, tar in valid_dataset:
     src = src[0]
     tar = tar[0]
-    tar_inp = src[:-2]
-    tar_real = src[2:]
+    tar_inp = tar[:-2]
+    tar_real = tar[2:]
     print(sp.piece_to_id("<Fr>"))
     print("src tensor:", tf.squeeze(src).numpy())
     print("src sentence:", sp.DecodeIds((tf.squeeze(src).numpy().tolist())))

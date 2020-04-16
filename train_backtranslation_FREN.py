@@ -137,8 +137,8 @@ def main(argv):
 
     @tf.function(input_signature=train_step_signature)
     def train_step(inp, targ):
-        tar_inp = targ[:, :-1]
-        tar_real = targ[:, 1:]
+        tar_inp = targ[:, :-2]
+        tar_real = targ[:, 2:]
 
         # tf.print("tar inp", tar_inp)
         # tf.print("tar real", tar_real)
@@ -165,8 +165,8 @@ def main(argv):
 
     @tf.function(input_signature=train_step_signature)
     def valid_step(inp, targ):
-        tar_inp = targ[:, :-1]
-        tar_real = targ[:, 1:]
+        tar_inp = targ[:, :-2]
+        tar_real = targ[:, 2:]
 
         # create mask
         enc_padding_mask = Transformer.create_padding_mask(inp)

@@ -13,25 +13,27 @@ from absl import flags
 from absl import logging
 
 from data.dataloaders import prepare_training_pairs
-from models import Transformer
+from models import mBART, Transformer
+import sentencepiece as spm
 
 FLAGS = flags.FLAGS
-
-flags.DEFINE_string('source', './data/pairs/train.lang1',
+flags.DEFINE_string('source', './data/pairs/train.lang2',
                     'path of source language')
-flags.DEFINE_string('target', './data/pairs/train.lang2',
+flags.DEFINE_string('target', './data/pairs/train.lang1',
                     'path of target language')
+flags.DEFINE_string('spm', './data/preprocessing/m.model',
+                    'path of sentencepiece model')
 flags.DEFINE_string('ckpt', './ckpt_base_transformer',
                     'path of target language')
 flags.DEFINE_integer('seed', 1234,
                      'random seed for reproducible result')
 flags.DEFINE_integer('epochs', 100,
                      'number of epochs')
-flags.DEFINE_integer('batch_size', 1,
+flags.DEFINE_integer('batch_size', 64,
                      'batch size')
-flags.DEFINE_integer('num_enc', 6,
+flags.DEFINE_integer('num_enc', 4,
                      'number of stacked encoder')
-flags.DEFINE_integer('num_dec', 6,
+flags.DEFINE_integer('num_dec', 4,
                      'number of stacked decoder')
 flags.DEFINE_integer('num_head', 8,
                      'number of head for multi-head attention')
@@ -47,15 +49,17 @@ def main(argv):
     # Creating dataloaders for training and validation
     logging.info("Creating the source dataloader from: %s" % FLAGS.source)
     logging.info("Creating the target dataloader from: %s" % FLAGS.target)
-    train_dataset, valid_dataset, src_tokenizer, \
-    tar_tokenizer, size_train, size_val = prepare_training_pairs(path_source=FLAGS.source,
-                                                                 path_target=FLAGS.target,
-                                                                 batch_size=FLAGS.batch_size,
-                                                                 valid_ratio=FLAGS.valid_ratio)
+    train_dataset, valid_dataset, size_train, size_val = prepare_training_pairs(FLAGS.source,
+                                                                                FLAGS.target,
+                                                                                FLAGS.spm,
+                                                                                batch_size=FLAGS.batch_size,
+                                                                                valid_ratio=0.1)
 
     # calculate vocabulary size
-    src_vocsize = len(src_tokenizer.word_index) + 1
-    tar_vocsize = len(tar_tokenizer.word_index) + 1
+    sp = spm.SentencePieceProcessor()
+    sp.Load(FLAGS.spm)
+    src_vocsize = len(sp)
+    tar_vocsize = len(sp)
     # ----------------------------------------------------------------------------------
     # Creating the instance of the model specified.
     logging.info("Create Transformer Model")
@@ -118,8 +122,8 @@ def main(argv):
 
     @tf.function(input_signature=train_step_signature)
     def train_step(inp, targ):
-        tar_inp = targ[:, :-1]
-        tar_real = targ[:, 1:]
+        tar_inp = targ[:, :-2]
+        tar_real = targ[:, 2:]
 
         # tf.print("tar inp", tar_inp)
         # tf.print("tar real", tar_real)
@@ -146,8 +150,8 @@ def main(argv):
 
     @tf.function(input_signature=train_step_signature)
     def valid_step(inp, targ):
-        tar_inp = targ[:, :-1]
-        tar_real = targ[:, 1:]
+        tar_inp = targ[:, :-2]
+        tar_real = targ[:, 2:]
 
         # create mask
         enc_padding_mask = Transformer.create_padding_mask(inp)
@@ -168,13 +172,15 @@ def main(argv):
 
     # ----------------------------------------------------------------------------------
     # Set up Checkpoints, so as to resume training if something interrupt, and save results
-    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_base_transformer")
+    ckpt_prefix = os.path.join(FLAGS.ckpt, "ckpt_BT_transformer")
     ckpt = tf.train.Checkpoint(optimizer=optimizer, model=model)
     manager = tf.train.CheckpointManager(
         ckpt, directory=FLAGS.ckpt, max_to_keep=2
     )
     # restore from latest checkpoint and iteration
+    print("Load previous checkpoints...")
     status = ckpt.restore(manager.latest_checkpoint)
+    status.assert_existing_objects_matched()
     if manager.latest_checkpoint:
         logging.info("Restored from {}".format(manager.latest_checkpoint))
     else:
@@ -184,8 +190,8 @@ def main(argv):
     # Setup the TensorBoard for better visualization
     logging.info("Setup the TensorBoard...")
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    train_log_dir = './logs/gradient_tape/' + current_time + '/base_transformer_train'
-    test_log_dir = './logs/gradient_tape/' + current_time + '/base_transformer_test'
+    train_log_dir = './logs/gradient_tape/' + current_time + '/BT_transformer_train'
+    test_log_dir = './logs/gradient_tape/' + current_time + '/BT_transformer_test'
     train_summary_writer = tf.summary.create_file_writer(train_log_dir)
     test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
