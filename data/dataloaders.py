@@ -55,26 +55,24 @@ def convert(lang, tensor):
     return s
 
 
-def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0.2, seed=1234):
+def prepare_training_pairs(path_source, path_target, path_spm, batch_size=1, valid_ratio=0.2, seed=1234, src="<En>", tar="<Fr>"):
     """
     Provide dataloader for translation from aligned training pairs
     """
     tf.random.set_seed(seed)
     # read data line by line with addition of "<start>", "<end>"
-    list_source = create_dataset(path_source)
-    list_target = create_dataset(path_target)
+    list_source = create_dataset(path_source, start=src+" ", end=" "+src)
+    list_target = create_dataset(path_target, start=tar+" ", end=" "+tar)
     print("Size of training pairs: %s" % (len(list_source)))
-
+    sp = spm.SentencePieceProcessor()
+    sp.Load(path_spm)
+    # encode sentences into id
+    list_source = list(map(sp.EncodeAsIds, list_source))
+    list_target = list(map(sp.EncodeAsIds, list_target))
     # split the dataset into train and valid
     source_train, source_val, target_train, target_val = train_test_split(list_source,
                                                                           list_target,
                                                                           test_size=valid_ratio, random_state=seed)
-
-    # encode text into index of words (only fit tokenizer on training set)
-    source_train, source_tokenizer = tokenize(source_train)
-    target_train, target_tokenizer = tokenize(target_train, lower=False)
-    source_val = source_tokenizer.texts_to_sequences(source_val)
-    target_val = target_tokenizer.texts_to_sequences(target_val)
 
     size_train = len(source_train)
     size_val = len(source_val)
@@ -84,11 +82,11 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     print("Writing the validation pairs into files for future evaluation")
     with open(os.path.join(ROOT_DIR, './data/pairs/val.lang1'), 'w', encoding="utf-8") as f:
         for src in source_val:
-            f.write(convert(source_tokenizer, src[1:-1]) + "\n")
+            f.write(sp.DecodeIds(src[2:-1]) + "\n")
 
     with open(os.path.join(ROOT_DIR, './data/pairs/val.lang2'), 'w', encoding="utf-8") as f:
         for tar in target_val:
-            f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
+            f.write(sp.DecodeIds(tar[2:-1]) + "\n")
 
     # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
     train_src = tf.data.Dataset.from_generator(lambda: iter(source_train), tf.int32).padded_batch(batch_size,
@@ -107,7 +105,7 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
     valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
-    return train_dataset, valid_dataset, source_tokenizer, target_tokenizer, size_train, size_val
+    return train_dataset, valid_dataset, size_train, size_val
 
 
 def prepare_mbart_pretrain_pairs(path_corpus, path_spm, batch_size=1, valid_ratio=0.1, seed=1234):
