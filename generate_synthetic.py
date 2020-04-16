@@ -66,9 +66,6 @@ def main():
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
 
-    if not os.path.exists(args.output):
-        os.makedirs(args.output)
-
     # Todo: Remember to modified the path of checkpoints in evaluator.py
     generate_predictions(args.ckpt, args.spm, args.input, args.output)
 
