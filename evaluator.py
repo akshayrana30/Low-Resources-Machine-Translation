@@ -24,7 +24,6 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     # load input file => create test dataloader => (spm encode)
     from data.dataloaders import prepare_test
     BATCH_SIZE = 128
-    MAX_LENGTH = 200
     path_spm = "./preprocessing/m.model"
     test_dataset, voc_size, test_max_length = prepare_test(input_file_path, path_spm, batch_size=BATCH_SIZE)
     # create model
@@ -50,12 +49,12 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
 
     # Greedy Search / Beam Search and write to pred_file_path
     import time
+    from translate import translate_batch
     start = time.time()
     with open(pred_file_path, 'w', encoding='utf-8') as pred_file:
         for (batch, (inp)) in enumerate(test_dataset):
             print("Evaluating Batch: %s" % batch)
-            translation = []
-            # translation = translate_batch(inp, batch_size=BATCH_SIZE, test_max_length)
+            translation = translate_batch(inp, batch_size=BATCH_SIZE)
             for sentence in translation:
                 pred_file.write(sentence.strip() + '\n')
     end = time.time()
