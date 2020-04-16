@@ -32,6 +32,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     src_vocsize = voc_size
     tar_vocsize = voc_size
     optimizer = tf.keras.optimizers.Adam()
+    # All the model we use is follow this setting
     model = mBART.mBART(voc_size_src=src_vocsize,
                         voc_size_tar=tar_vocsize,
                         max_pe=10000,
