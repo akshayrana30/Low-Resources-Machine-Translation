@@ -38,24 +38,15 @@ def max_length(tensor):
     return max(len(t) for t in tensor)
 
 
-# Todo: Understand this. to see if it support choosing top V voc, and put <unk>
-def tokenize(lang, oov_token=None, lower=True):
-    lang_tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='', lower=lower, oov_token=oov_token)
-    lang_tokenizer.fit_on_texts(lang)
-
-    tensor = lang_tokenizer.texts_to_sequences(lang)
-    return tensor, lang_tokenizer
-
-
-def convert(lang, tensor):
-    s = ""
-    for t in tensor:
-        if t != 0:
-            s += lang.index_word[t] + " "
-    return s
-
-
-def prepare_training_pairs(path_source, path_target, path_spm, batch_size=1, valid_ratio=0.2, seed=1234, src="<En>",
+def prepare_training_pairs(path_source,
+                           path_target,
+                           path_spm,
+                           path_syn_source=None,
+                           path_syn_target=None,
+                           batch_size=1,
+                           valid_ratio=0.2,
+                           seed=1234,
+                           src="<En>",
                            tar="<Fr>"):
     """
     Provide dataloader for translation from aligned training pairs
@@ -64,9 +55,10 @@ def prepare_training_pairs(path_source, path_target, path_spm, batch_size=1, val
     # read data line by line with addition of "<start>", "<end>"
     list_source = create_dataset(path_source, start=src + " ", end=" " + src)
     list_target = create_dataset(path_target, start=tar + " ", end=" " + tar)
+
     print("Sample source", list_source[0])
     print("Sample target", list_target[0])
-    print("Size of training pairs: %s" % (len(list_source)))
+
     sp = spm.SentencePieceProcessor()
     sp.Load(path_spm)
     # encode sentences into id
@@ -76,6 +68,18 @@ def prepare_training_pairs(path_source, path_target, path_spm, batch_size=1, val
     source_train, source_val, target_train, target_val = train_test_split(list_source,
                                                                           list_target,
                                                                           test_size=valid_ratio, random_state=seed)
+
+    if path_syn_source and path_syn_target:
+        list_syn_source = create_dataset(path_syn_source, start=src + " ", end=" " + src)
+        list_syn_target = create_dataset(path_syn_target, start=src + " ", end=" " + src)
+        print("Sample syn source", list_syn_source[0])
+        print("Sample syn target", list_syn_target[0])
+        list_syn_source = list(map(sp.EncodeAsIds, list_syn_source))
+        list_syn_target = list(map(sp.EncodeAsIds, list_syn_target))
+
+        # combine synthetic
+        source_train = source_train + list_syn_source
+        target_train = target_train + list_syn_target
 
     size_train = len(source_train)
     size_val = len(source_val)
@@ -152,7 +156,7 @@ def prepare_mbart_pretrain_pairs(path_corpus, path_spm, batch_size=1, valid_rati
     return train_dataset, valid_dataset, size_train, size_val, corpus_max_length
 
 
-def prepare_test(path_test, path_spm, batch_size=1,  src="<En>"):
+def prepare_test(path_test, path_spm, batch_size=1, src="<En>"):
     # read lines in test files
     list_source = create_dataset(path_test, start=src + " ", end=" " + src)
     sp = spm.SentencePieceProcessor()
@@ -162,7 +166,7 @@ def prepare_test(path_test, path_spm, batch_size=1,  src="<En>"):
     size_test = len(source_test)
     test_max_length = max_length(source_test)
     print("Size of test: %s" % size_test)
-    print("Max length of test set: %s" %test_max_length)
+    print("Max length of test set: %s" % test_max_length)
 
     # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
     test_dataset = tf.data.Dataset.from_generator(lambda: iter(source_test), tf.int32).padded_batch(batch_size,
