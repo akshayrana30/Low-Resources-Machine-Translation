@@ -5,6 +5,7 @@ import tensorflow as tf
 from data.dataloaders import prepare_training_pairs
 import sentencepiece as spm
 
+
 def convert(lang, tensor):
     s = ""
     for t in tensor:
@@ -15,34 +16,28 @@ def convert(lang, tensor):
 
 source = "../data/pairs/train.lang1"
 target = "../data/pairs/train.lang2"
-path_spm = "../preprocessing/m.model"
 
-train_dataset, valid_dataset, size_train, size_val = prepare_training_pairs(source,
-                                                                            target,
-                                                                            path_spm,
-                                                                            batch_size=2,
-                                                                            valid_ratio=0.1)
-
-sp = spm.SentencePieceProcessor()
-sp.Load(path_spm)
-
-src_vocsize = len(sp)
-tar_vocsize = len(sp)
+train_dataset, valid_dataset, src_tokenizer, \
+tar_tokenizer, size_train, size_val = prepare_training_pairs(source,
+                                                             target,
+                                                             batch_size=2,
+                                                             valid_ratio=0.1)
 
 count = 0
 for src, tar in valid_dataset:
     src = src[0]
     tar = tar[0]
-    tar_inp = tar[:-2]
-    tar_real = tar[2:]
-    print(sp.piece_to_id("<Fr>"))
+    tar_inp = tar[:-1]
+    tar_real = tar[1:]
+    end = tf.cast(tf.math.logical_not(tf.math.equal(tar_inp, tar_tokenizer.word_index['<end>'])), tf.int32)
+    tar_inp*=end
     print("src tensor:", tf.squeeze(src).numpy())
-    print("src sentence:", sp.DecodeIds((tf.squeeze(src).numpy().tolist())))
+    print("src sentence:", convert(src_tokenizer, tf.squeeze(src).numpy()))
     print("target tensor:", tf.squeeze(tar).numpy())
-    print("target sentence:", sp.DecodeIds((tf.squeeze(src).numpy().tolist())))
-    print("tar inp sentence:", sp.DecodeIds((tf.squeeze(tar_inp).numpy().tolist())))
-    print("tar real sentence:", sp.DecodeIds((tf.squeeze(tar_real).numpy().tolist())))
+    print("target sentence:", convert(tar_tokenizer, tf.squeeze(tar).numpy()))
+    print("tar inp sentence:", convert(tar_tokenizer, tf.squeeze(tar_inp).numpy()))
+    print("tar real sentence:", convert(tar_tokenizer, tf.squeeze(tar_real).numpy()))
     print("-----------------------------------------------")
-    count+=1
+    count += 1
     if count > 20:
         break

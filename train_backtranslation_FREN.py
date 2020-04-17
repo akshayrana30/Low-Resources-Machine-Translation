@@ -57,34 +57,29 @@ def main(argv):
     # Creating dataloaders for training and validation
     logging.info("Creating the source dataloader from: %s" % FLAGS.source)
     logging.info("Creating the target dataloader from: %s" % FLAGS.target)
-    train_dataset, valid_dataset, size_train, size_val = prepare_training_pairs(FLAGS.source,
-                                                                                FLAGS.target,
-                                                                                FLAGS.spm,
-                                                                                FLAGS.syn_src,
-                                                                                FLAGS.syn_tar,
-                                                                                batch_size=FLAGS.batch_size,
-                                                                                valid_ratio=0.1,
-                                                                                src="<Fr>",
-                                                                                tar="<En>")
+    train_dataset, valid_dataset, src_tokenizer, \
+    tar_tokenizer, size_train, size_val = prepare_training_pairs(FLAGS.source,
+                                                                 FLAGS.target,
+                                                                 FLAGS.syn_src,
+                                                                 FLAGS.syn_tar,
+                                                                 batch_size=FLAGS.batch_size,
+                                                                 valid_ratio=0.1)
 
     # calculate vocabulary size
-    sp = spm.SentencePieceProcessor()
-    sp.Load(FLAGS.spm)
-    src_vocsize = len(sp)
-    tar_vocsize = len(sp)
+    src_vocsize = len(src_tokenizer.word_index) + 1
+    tar_vocsize = len(tar_tokenizer.word_index) + 1
     # ----------------------------------------------------------------------------------
     # Creating the instance of the model specified.
     logging.info("Create Transformer Model")
     optimizer = tf.keras.optimizers.Adam()
-    model = mBART.mBART(voc_size_src=src_vocsize,
-                        voc_size_tar=tar_vocsize,
-                        max_pe=10000,
-                        num_encoders=FLAGS.num_enc,
-                        num_decoders=FLAGS.num_dec,
-                        emb_size=FLAGS.emb_size,
-                        num_head=FLAGS.num_head,
-                        ff_inner=FLAGS.ffnn_dim)
-
+    model = Transformer.Transformer(voc_size_src=src_vocsize,
+                                    voc_size_tar=tar_vocsize,
+                                    max_pe=10000,
+                                    num_encoders=FLAGS.num_enc,
+                                    num_decoders=FLAGS.num_dec,
+                                    emb_size=FLAGS.emb_size,
+                                    num_head=FLAGS.num_head,
+                                    ff_inner=FLAGS.ffnn_dim)
     # load pretrained mBart
     if FLAGS.load_mBart:
         print("Load Pretraining mBART...")
@@ -145,9 +140,10 @@ def main(argv):
 
     @tf.function(input_signature=train_step_signature)
     def train_step(inp, targ):
-        tar_inp = targ[:, :-2]
-        tar_real = targ[:, 2:]
-
+        tar_inp = targ[:, :-1]
+        tar_real = targ[:, 1:]
+        end = tf.cast(tf.math.logical_not(tf.math.equal(tar_inp, tar_tokenizer.word_index['<end>'])), tf.int32)
+        tar_inp *= end
         # tf.print("tar inp", tar_inp)
         # tf.print("tar real", tar_real)
         # create mask
@@ -173,9 +169,10 @@ def main(argv):
 
     @tf.function(input_signature=train_step_signature)
     def valid_step(inp, targ):
-        tar_inp = targ[:, :-2]
-        tar_real = targ[:, 2:]
-
+        tar_inp = targ[:, :-1]
+        tar_real = targ[:, 1:]
+        end = tf.cast(tf.math.logical_not(tf.math.equal(tar_inp, tar_tokenizer.word_index['<end>'])), tf.int32)
+        tar_inp *= end
         # create mask
         enc_padding_mask = Transformer.create_padding_mask(inp)
 
