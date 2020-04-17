@@ -2,7 +2,7 @@ import argparse
 import logging
 
 
-def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_file_path: str):
+def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_file_path: str, num_sync):
     """Generates predictions for the machine translation task (EN->FR).
     You are allowed to modify this function as needed, but one again, you cannot
     modify any other part of this file. We will be importing only this function
@@ -16,6 +16,7 @@ def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_fi
     # load input file => create test dataloader => (spm encode)
     from data.dataloaders import prepare_test, prepare_training_pairs
     BATCH_SIZE = 128
+    TOTAL_ITER = int((num_sync / 128))
     # load training data, use the tokenizer of train to tokenize test data
     train_dataset, valid_dataset, src_tokenizer, \
     tar_tokenizer, size_train, size_val = prepare_training_pairs(path_src,
@@ -49,6 +50,7 @@ def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_fi
     import time
     from translate import translate_batch
     start = time.time()
+    count = 0
     with open(pred_file_path, 'w', encoding='utf-8') as pred_file:
         for (batch, (inp)) in enumerate(test_dataset):
             print("Evaluating Batch: %s" % batch)
@@ -56,6 +58,9 @@ def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_fi
             for sentence in translation:
                 pred_file.write(sentence.strip() + '\n')
                 pred_file.flush()
+            count += 1
+            if count > TOTAL_ITER:
+                break
     end = time.time()
     print("Translation finish in %s s" % (end - start))
 
@@ -68,11 +73,12 @@ def main():
     parser.add_argument('--ckpt', help='file to be translated')
     parser.add_argument('--path_src', help='path to training file')
     parser.add_argument('--path_tar', help='path to target')
+    parser.add_argument('--num', help='number of synthetic')
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
 
     # Todo: Remember to modified the path of checkpoints in evaluator.py
-    generate_predictions(args.ckpt, args.src, args.tar, args.input, args.outputs)
+    generate_predictions(args.ckpt, args.src, args.tar, args.input, args.outputs, args.num)
 
 
 if __name__ == '__main__':
