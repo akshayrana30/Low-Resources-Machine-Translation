@@ -93,8 +93,9 @@ def tokenize(aligned_lang, unaligned_lang, num_words):
   return tensor, lang_tokenizer
 
 
-def train_val_split(input_lang, output_lang, seed=1234):
-  return train_test_split(input_lang, output_lang, test_size=0.2, random_state=seed)
+def train_val_split(input_lang, output_lang):
+  return train_test_split(input_lang, output_lang,
+                          test_size=train_val_split_ratio, random_state=random_seed_for_split)
 
 
 def load_embeddings(emb_path):
@@ -116,10 +117,13 @@ def load_data(reverse_translate=False, add_synthetic_data=False,
   input_aligned_train, input_aligned_val, \
   output_aligned_train, output_aligned_val = train_val_split(aligned_en, aligned_fr)
 
+  print("Training Data: ", len(input_aligned_train))
+  print("Validation Data: ", len(input_aligned_val))
+  
   # To use for Bleu score in the end
   aligned_en_org, aligned_fr_org = dataloader_aligned(preprocess=False)
-  input_aligned_train_org, input_aligned_val_org, \
-  output_aligned_train_org, output_aligned_val_org = train_val_split(aligned_en_org, aligned_fr_org)
+  _, input_aligned_val_org, \
+  _, output_aligned_val_org = train_val_split(aligned_en_org, aligned_fr_org)
 
   print("-- Creating Vocabulary and Tokenizing --")
   input_train, input_tokenizer = tokenize(input_aligned_train, unaligned_en, inp_vocab_size)
@@ -134,7 +138,8 @@ def load_data(reverse_translate=False, add_synthetic_data=False,
     synth_fr = pad_sequences(synth_fr, padding='post', maxlen=output_train.shape[1])
     input_train = np.concatenate((input_train, synth_en, input_train), axis=0)
     output_train = np.concatenate((output_train, synth_fr, output_train), axis=0)
-  
+    print("Updated Training Data: ", input_train.shape[0])
+
   if load_emb:
     print("-- Loading embedding --")
     e_emb = load_embeddings("emb_en_"+str(emb_size)+"_20k.pkl")

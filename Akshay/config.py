@@ -1,5 +1,5 @@
-root_path = "/content/drive/My Drive/NMT/"
-# root_path = "/Users/akshayrana/Documents/Github/Low-Resources-Machine-Translation/Akshay/data/"
+# root_path = "/content/drive/My Drive/NMT/"
+root_path = "/Users/akshayrana/Documents/Github/Low-Resources-Machine-Translation/Akshay/data/"
 unaligned_en_path = "unaligned.en"
 unaligned_fr_path = "unaligned.fr"
 aligned_en_path = "train.lang1"
@@ -13,8 +13,11 @@ tar_vocab_size=20000
 # While keeping an embedding of 128 or 256, the batch size can be increased upto 128. 
 emb_size = 256
 train_batch_size = 128
-val_batch_size = 128
+val_batch_size = 256
 
+
+train_val_split_ratio = 0.2
+random_seed_for_split = 1234
 
 
 # This will load word2vec embeddings for vocab size 20k. 
@@ -33,14 +36,14 @@ num_heads = 8
 dropout_rate = 0.1
 
 # If you need to train from scratch, change this to False
-load_from_checkpoint = True
-checkpoint_path = root_path+"french_to_eng_checkpoints/train/"
+load_from_checkpoint = False
+checkpoint_path = root_path+"eng_to_french_checkpoints/train/"
 
 if load_from_checkpoint: # and a checkpoint exists in the path above
     # Train for few epoch if already loading from checkpoint
     EPOCHS = 10
 else:
-    EPOCHS = 10
+    EPOCHS = 30
 
 # Save checkpoint after these many epochs 
 save_every = 5
@@ -68,8 +71,8 @@ else:
     # This is to support English -> French model
     # X is predicted, Y is real data..
     # The below data is generated using a french to english model.
-    aligned_en_synth_path = "synth_fr_en_output_EN.txt" # Predicted English.
-    aligned_fr_synth_path = "synth_fr_en_input_FR.txt"  # Original French.
+    aligned_en_synth_path = "synth_fr_en_output_EN_MIX.txt" # Predicted English.
+    aligned_fr_synth_path = "synth_fr_en_input_FR_MIX.txt"  # Original French.
 
 
 # This is to generate synthetic parallel samples from monolingual data..
