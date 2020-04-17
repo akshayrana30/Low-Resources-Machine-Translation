@@ -5,15 +5,10 @@ Ref: a. https://www.tensorflow.org/tutorials/load_data/text
 """
 import io
 import os
-from random import shuffle
-import unicodedata
-import numpy as np
+from datetime import datetime
 import tensorflow as tf
-import tensorflow_datasets as tfds
 
 from sklearn.model_selection import train_test_split
-
-from preprocessing import tokenizer, punctuation_remover
 from definition import ROOT_DIR
 
 
@@ -54,7 +49,14 @@ def convert(lang, tensor):
     return s
 
 
-def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0.2, seed=1234):
+def prepare_training_pairs(path_source,
+                           path_target,
+                           path_syn_source=None,
+                           path_syn_target=None,
+                           batch_size=1,
+                           valid_ratio=0.2,
+                           seed=1234,
+                           name="sync"):
     """
     Provide dataloader for translation from aligned training pairs
     """
@@ -62,12 +64,24 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     # read data line by line with addition of "<start>", "<end>"
     list_source = create_dataset(path_source)
     list_target = create_dataset(path_target)
-    print("Size of training pairs: %s" % (len(list_source)))
+    print("Sample source", list_source[0])
+    print("Sample target", list_target[0])
 
     # split the dataset into train and valid
     source_train, source_val, target_train, target_val = train_test_split(list_source,
                                                                           list_target,
-                                                                          test_size=valid_ratio, random_state=seed)
+                                                                          test_size=valid_ratio,
+                                                                          random_state=seed)
+
+    if path_syn_source and path_syn_target:
+        list_syn_source = create_dataset(path_syn_source)
+        list_syn_target = create_dataset(path_syn_target)[:len(list_syn_source)]
+        print("Sample syn source", list_syn_source[0])
+        print("Sample syn target", list_syn_target[0])
+        assert len(list_syn_source) == len(list_syn_target)
+        # combine synthetic
+        source_train = source_train + list_syn_source
+        target_train = target_train + list_syn_target
 
     # encode text into index of words (only fit tokenizer on training set)
     source_train, source_tokenizer = tokenize(source_train)
@@ -80,12 +94,22 @@ def prepare_training_pairs(path_source, path_target, batch_size=1, valid_ratio=0
     print("Size of train set: %s" % size_train)
     print("Size of valid set: %s" % size_val)
 
+    print("Writing the training pairs into files for future evaluation")
+    timestamp = datetime.now().strftime('%m-%d-%H-%M')
+    with open(os.path.join(ROOT_DIR, 'train.lang1_' + timestamp), 'w', encoding="utf-8") as f:
+        for src in source_train:
+            f.write(convert(source_tokenizer, src[1:-1]) + "\n")
+
+    with open(os.path.join(ROOT_DIR, 'train.lang2_' + timestamp), 'w', encoding="utf-8") as f:
+        for tar in target_train:
+            f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
+
     print("Writing the validation pairs into files for future evaluation")
-    with open(os.path.join(ROOT_DIR, './data/pairs/val.lang1'), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, 'val.lang1_' + timestamp), 'w', encoding="utf-8") as f:
         for src in source_val:
             f.write(convert(source_tokenizer, src[1:-1]) + "\n")
 
-    with open(os.path.join(ROOT_DIR, './data/pairs/val.lang2'), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, 'val.lang2_' + timestamp), 'w', encoding="utf-8") as f:
         for tar in target_val:
             f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
 
@@ -122,7 +146,6 @@ def prepare_mbart_pretrain_pairs(path_corpus, batch_size=1, valid_ratio=0.1, see
     print("Size of training pairs: %s" % (len(list_corpus)))
     corpus_tensor, corpus_tokenizer = tokenize(list_corpus, oov_token='[MASK]')
     print("[MASK] index:", corpus_tokenizer.word_index['[MASK]'])
-
     # split the dataset into train and valid
     source_train, source_val, target_train, target_val = train_test_split(corpus_tensor,
                                                                           corpus_tensor,
@@ -148,3 +171,21 @@ def prepare_mbart_pretrain_pairs(path_corpus, batch_size=1, valid_ratio=0.1, see
     valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
     return train_dataset, valid_dataset, corpus_tokenizer, size_train, size_val, corpus_max_length
+
+
+def prepare_test(path_test, src_tokenizer, batch_size=1):
+    # read lines in test files
+    list_test = create_dataset(path_test)
+
+    # encode sentences into id
+    test_tensor = src_tokenizer.texts_to_sequences(list_test)
+    size_test = len(test_tensor)
+    test_max_length = max_length(test_tensor)
+    print("Size of test: %s" % size_test)
+    print("Max length of test set: %s" % test_max_length)
+
+    # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
+    test_dataset = tf.data.Dataset.from_generator(lambda: iter(test_tensor), tf.int32).padded_batch(batch_size,
+                                                                                                    padded_shapes=[
+                                                                                                        None])
+    return test_dataset, test_max_length
