@@ -82,7 +82,7 @@ def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_fi
 
 def main(argv):
     # Todo: Remember to modified the path of checkpoints in evaluator.py
-    generate_predictions(FLAGS.ckpt, FLAGS.src, FLAGS.tar, FLAGS.input, FLAGS.output, FLAGS.num_sync)
+    generate_predictions(FLAGS.ckpt, FLAGS.src, FLAGS.tar, FLAGS.input, FLAGS.output, FLAGS.num_syn)
 
 
 if __name__ == '__main__':
