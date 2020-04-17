@@ -5,7 +5,6 @@ from models import Transformer
 
 def translate_batch(model, inp, batch_size, tar_tokenizer):
     batch_max_length = tf.shape(inp)[1]
-    batch_size = tf.shape(inp)[0]
     decoder_input = tf.expand_dims([tar_tokenizer.word_index['<start>']] * batch_size, axis=1)
     output = decoder_input
 

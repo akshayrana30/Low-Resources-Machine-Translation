@@ -86,6 +86,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
         for (batch, (inp)) in enumerate(test_dataset):
             if batch % 5 == 0:
                 print("Evaluating Batch: %s" % batch)
+            batch_size = tf.shape(inp)[0].numpy()
             translation = translate_batch(model, inp, batch_size, tar_tokenizer)
             for sentence in translation:
                 pred_file.write(sentence.strip() + '\n')
