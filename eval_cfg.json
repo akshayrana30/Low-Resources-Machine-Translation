@@ -1,0 +1,6 @@
+{
+  "batch_size":128,
+  "src": "./final_training_files/",
+  "tar": "./final_training_files/",
+  "ckpt": "./final_checkpoints/"
+}

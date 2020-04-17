@@ -21,46 +21,79 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
         pred_file_path: the file path where to store the predictions.
     Returns: None
     """
-    # load input file => create test dataloader => (spm encode)
-    from data.dataloaders import prepare_test
-    BATCH_SIZE = 128
-    path_spm = "./preprocessing/m.model"
-    # Todo need to add the final train files for tokenizer
-    test_dataset, voc_size, test_max_length = prepare_test(input_file_path, path_spm, batch_size=BATCH_SIZE)
-    # create model
-    from models import mBART
+    # ---------------------------------------------------------------------
+    # Include essential module for evaluation
+    import os
+    import json
+    import time
     import tensorflow as tf
-    src_vocsize = voc_size
-    tar_vocsize = voc_size
-    optimizer = tf.keras.optimizers.Adam()
-    # All the model we use is follow this setting
-    model = mBART.mBART(voc_size_src=src_vocsize,
-                        voc_size_tar=tar_vocsize,
-                        max_pe=10000,
-                        num_encoders=4,
-                        num_decoders=4,
-                        emb_size=512,
-                        num_head=8,
-                        ff_inner=1024)
+    from data.dataloaders import prepare_training_pairs, prepare_test
+    from models import Transformer
+    from translate import translate_batch
+    from definition import ROOT_DIR
+    CONFIG = "eval_cfg.json"
+    # ---------------------------------------------------------------------
+    # Load setting in json file
 
+    with open(os.path.join(ROOT_DIR, CONFIG)) as f:
+        para = json.load(f)
+    batch_size = para["batch_size"]
+    source = para["src"]
+    target = para["tar"]
+    ckpt_dir = para["ckpt"]
+
+    # ---------------------------------------------------------------------
+    # Create test dataloader from input file (tokenized and map to sequence)
+
+    # Todo: The final training and target file is needed, so as to use the same tokenizer on test data,
+    #  because we didn't build a dictionary file.
+
+    train_dataset, valid_dataset, src_tokenizer, \
+    tar_tokenizer, size_train, size_val = prepare_training_pairs(source,
+                                                                 target,
+                                                                 batch_size=batch_size,
+                                                                 valid_ratio=0)
+    print("size train", size_train)
+    print("size val", size_val)
+    test_dataset, voc_size, test_max_length = prepare_test(input_file_path,
+                                                           src_tokenizer,
+                                                           batch_size=batch_size)
+    # calculate vocabulary size
+    src_vocsize = len(src_tokenizer.word_index) + 1
+    tar_vocsize = len(tar_tokenizer.word_index) + 1
+
+    # ---------------------------------------------------------------------
+    # Create the instance of model to load checkpoints
+    # Todo: Define the model that fit the checkpoints you want to load
+    optimizer = tf.keras.optimizers.Adam()
+    model = Transformer.Transformer(voc_size_src=src_vocsize,
+                                    voc_size_tar=tar_vocsize,
+                                    max_pe=10000,
+                                    num_encoders=4,
+                                    num_decoders=4,
+                                    emb_size=512,
+                                    num_head=8,
+                                    ff_inner=1024)
+
+    # ---------------------------------------------------------------------
     # Load CheckPoint
-    ckpt_dir = "../ckpt_BT/"
     checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
     status = checkpoint.restore(tf.train.latest_checkpoint(ckpt_dir))
+    # check if loading is successful
     status.assert_existing_objects_matched()
 
-    # Greedy Search / Beam Search and write to pred_file_path
-    import time
-    from translate import translate_batch
+    # ---------------------------------------------------------------------
+    # Use Greedy Search to generate prediction and write to pred_file_path
     start = time.time()
     with open(pred_file_path, 'w', encoding='utf-8') as pred_file:
         for (batch, (inp)) in enumerate(test_dataset):
-            print("Evaluating Batch: %s" % batch)
-            translation = translate_batch(inp, batch_size=BATCH_SIZE)
+            if batch % 5 == 0:
+                print("Evaluating Batch: %s" % batch)
+            translation = translate_batch(model, inp, batch_size, tar_tokenizer)
             for sentence in translation:
                 pred_file.write(sentence.strip() + '\n')
     end = time.time()
-    print("Translation finish in %s s"%(end-start))
+    print("Translation finish in %s s" % (end - start))
 
 
 def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: bool):

@@ -100,7 +100,7 @@ def prepare_training_pairs(path_source,
         for src in source_train:
             f.write(convert(source_tokenizer, src[1:-1]) + "\n")
 
-    with open(os.path.join(ROOT_DIR, 'train.lang2+' + timestamp), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, 'train.lang2_' + timestamp), 'w', encoding="utf-8") as f:
         for tar in target_train:
             f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
 
