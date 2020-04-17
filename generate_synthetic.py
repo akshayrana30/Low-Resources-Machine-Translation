@@ -2,7 +2,7 @@ import argparse
 import logging
 
 
-def generate_predictions(ckpt, path_train, path_target, input_file_path: str, pred_file_path: str, reverse=False):
+def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_file_path: str):
     """Generates predictions for the machine translation task (EN->FR).
     You are allowed to modify this function as needed, but one again, you cannot
     modify any other part of this file. We will be importing only this function
@@ -18,8 +18,8 @@ def generate_predictions(ckpt, path_train, path_target, input_file_path: str, pr
     BATCH_SIZE = 128
     # load training data, use the tokenizer of train to tokenize test data
     train_dataset, valid_dataset, src_tokenizer, \
-    tar_tokenizer, size_train, size_val = prepare_training_pairs(path_train,
-                                                                 path_target,
+    tar_tokenizer, size_train, size_val = prepare_training_pairs(path_src,
+                                                                 path_tar,
                                                                  batch_size=1,
                                                                  valid_ratio=0.1)
     test_dataset, voc_size, test_max_length = prepare_test(input_file_path, src_tokenizer, batch_size=BATCH_SIZE)
@@ -52,7 +52,7 @@ def generate_predictions(ckpt, path_train, path_target, input_file_path: str, pr
     with open(pred_file_path, 'w', encoding='utf-8') as pred_file:
         for (batch, (inp)) in enumerate(test_dataset):
             print("Evaluating Batch: %s" % batch)
-            translation = translate_batch(model, inp, BATCH_SIZE, tar_tokenizer, reverse=reverse)
+            translation = translate_batch(model, inp, BATCH_SIZE, tar_tokenizer)
             for sentence in translation:
                 pred_file.write(sentence.strip() + '\n')
                 pred_file.flush()
@@ -66,13 +66,13 @@ def main():
     parser.add_argument('--input', help='file to be translated')
     parser.add_argument('--output', help='path to outputs - will store files here')
     parser.add_argument('--ckpt', help='file to be translated')
-    parser.add_argument('--spm', help='path to outputs - will store files here')
-    parser.add_argument('--reverse', help='FR to EN?')
+    parser.add_argument('--path_src', help='path to training file')
+    parser.add_argument('--path_tar', help='path to target')
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
 
     # Todo: Remember to modified the path of checkpoints in evaluator.py
-    generate_predictions(args.ckpt, args.spm, args.input, args.output, args.reverse)
+    generate_predictions(args.ckpt, args.src, args.tar, args.input, args.outputs)
 
 
 if __name__ == '__main__':

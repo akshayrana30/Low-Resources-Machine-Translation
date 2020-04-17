@@ -25,6 +25,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     from data.dataloaders import prepare_test
     BATCH_SIZE = 128
     path_spm = "./preprocessing/m.model"
+    # Todo need to add the final train files for tokenizer
     test_dataset, voc_size, test_max_length = prepare_test(input_file_path, path_spm, batch_size=BATCH_SIZE)
     # create model
     from models import mBART
