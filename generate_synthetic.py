@@ -1,5 +1,18 @@
-import argparse
-import logging
+from absl import flags
+
+FLAGS = flags.FLAGS
+flags.DEFINE_string('ckpt', './ckpt',
+                    'path of source language')
+flags.DEFINE_string('src', './data/pairs/train.lang1',
+                    'path of source language')
+flags.DEFINE_string('tar', './data/pairs/train.lang2',
+                    'path of target language')
+flags.DEFINE_string('input', None,
+                    'path of target language')
+flags.DEFINE_string('output', './ckpt_pretrain_mBART',
+                    'path of target language')
+flags.DEFINE_integer('num_syn', 30000,
+                     'number of synthetic data u want')
 
 
 def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_file_path: str, num_sync):
@@ -65,20 +78,9 @@ def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_fi
     print("Translation finish in %s s" % (end - start))
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        'script to create synthetic data for backtranslation.')
-    parser.add_argument('--input', help='file to be translated')
-    parser.add_argument('--output', help='path to outputs - will store files here')
-    parser.add_argument('--ckpt', help='file to be translated')
-    parser.add_argument('--path_src', help='path to training file')
-    parser.add_argument('--path_tar', help='path to target')
-    parser.add_argument('--num', help='number of synthetic')
-    args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO)
-
+def main(argv):
     # Todo: Remember to modified the path of checkpoints in evaluator.py
-    generate_predictions(args.ckpt, args.src, args.tar, args.input, args.outputs, args.num)
+    generate_predictions(FLAGS.ckpt, FLAGS.src, FLAGS.tar, FLAGS.input, FLAGS.output, FLAGS.num_sync)
 
 
 if __name__ == '__main__':
