@@ -18,16 +18,16 @@ import sentencepiece as spm
 from definition import ROOT_DIR
 
 
-def preprocess_sentence(sentence, start, end):
-    sentence = start + sentence + end
+def preprocess_sentence(sentence):
+    sentence = '<start> ' + sentence + ' <end>'
     return sentence
 
 
-def create_dataset(path, preprocess=True, start="<start> ", end=" <end>"):
+def create_dataset(path, preprocess=True):
     lines = io.open(path, encoding='UTF-8').read().strip().split('\n')
     if preprocess:
         # for machine translation
-        lines = [preprocess_sentence(s, start, end) for s in lines]
+        lines = [preprocess_sentence(s) for s in lines]
     else:
         # for mBART
         lines = [s for s in lines]
@@ -38,49 +38,61 @@ def max_length(tensor):
     return max(len(t) for t in tensor)
 
 
+# Todo: Understand this. to see if it support choosing top V voc, and put <unk>
+def tokenize(lang, oov_token=None, lower=True):
+    lang_tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='', lower=lower, oov_token=oov_token)
+    lang_tokenizer.fit_on_texts(lang)
+
+    tensor = lang_tokenizer.texts_to_sequences(lang)
+    return tensor, lang_tokenizer
+
+
+def convert(lang, tensor):
+    s = ""
+    for t in tensor:
+        if t != 0:
+            s += lang.index_word[t] + " "
+    return s
+
+
 def prepare_training_pairs(path_source,
                            path_target,
-                           path_spm,
                            path_syn_source=None,
                            path_syn_target=None,
                            batch_size=1,
                            valid_ratio=0.2,
-                           seed=1234,
-                           src="<En>",
-                           tar="<Fr>"):
+                           seed=1234):
     """
     Provide dataloader for translation from aligned training pairs
     """
     tf.random.set_seed(seed)
     # read data line by line with addition of "<start>", "<end>"
-    list_source = create_dataset(path_source, start=src + " ", end=" " + src)
-    list_target = create_dataset(path_target, start=tar + " ", end=" " + tar)
-
+    list_source = create_dataset(path_source)
+    list_target = create_dataset(path_target)
     print("Sample source", list_source[0])
     print("Sample target", list_target[0])
 
-    sp = spm.SentencePieceProcessor()
-    sp.Load(path_spm)
-    # encode sentences into id
-    list_source = list(map(sp.EncodeAsIds, list_source))
-    list_target = list(map(sp.EncodeAsIds, list_target))
     # split the dataset into train and valid
     source_train, source_val, target_train, target_val = train_test_split(list_source,
                                                                           list_target,
-                                                                          test_size=valid_ratio, random_state=seed)
+                                                                          test_size=valid_ratio,
+                                                                          random_state=seed)
 
     if path_syn_source and path_syn_target:
-        list_syn_source = create_dataset(path_syn_source, start=src + " ", end=" " + src)
-        list_syn_target = create_dataset(path_syn_target, start=src + " ", end=" " + src)
-        list_syn_source = list(map(sp.EncodeAsIds, list_syn_source))
-        list_syn_target = list(map(sp.EncodeAsIds, list_syn_target[:len(list_syn_source)]))
+        list_syn_source = create_dataset(path_syn_source)
+        list_syn_target = create_dataset(path_syn_target)
         print("Sample syn source", list_syn_source[0])
         print("Sample syn target", list_syn_target[0])
         assert len(list_syn_source) == len(list_syn_target)
-
         # combine synthetic
         source_train = source_train + list_syn_source
         target_train = target_train + list_syn_target
+
+    # encode text into index of words (only fit tokenizer on training set)
+    source_train, source_tokenizer = tokenize(source_train)
+    target_train, target_tokenizer = tokenize(target_train)
+    source_val = source_tokenizer.texts_to_sequences(source_val)
+    target_val = target_tokenizer.texts_to_sequences(target_val)
 
     size_train = len(source_train)
     size_val = len(source_val)
@@ -90,11 +102,11 @@ def prepare_training_pairs(path_source,
     print("Writing the validation pairs into files for future evaluation")
     with open(os.path.join(ROOT_DIR, './data/pairs/val.lang1'), 'w', encoding="utf-8") as f:
         for src in source_val:
-            f.write(sp.DecodeIds(src[2:-1]) + "\n")
+            f.write(convert(source_tokenizer, src[1:-1]) + "\n")
 
     with open(os.path.join(ROOT_DIR, './data/pairs/val.lang2'), 'w', encoding="utf-8") as f:
         for tar in target_val:
-            f.write(sp.DecodeIds(tar[2:-1]) + "\n")
+            f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
 
     # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
     train_src = tf.data.Dataset.from_generator(lambda: iter(source_train), tf.int32).padded_batch(batch_size,
@@ -113,10 +125,10 @@ def prepare_training_pairs(path_source,
     train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
     valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
-    return train_dataset, valid_dataset, size_train, size_val
+    return train_dataset, valid_dataset, source_tokenizer, target_tokenizer, size_train, size_val
 
 
-def prepare_mbart_pretrain_pairs(path_corpus, path_spm, batch_size=1, valid_ratio=0.1, seed=1234):
+def prepare_mbart_pretrain_pairs(path_corpus, batch_size=1, valid_ratio=0.1, seed=1234):
     """
     Provide dataloader for pretraining mBART unaligned corpus
     """
@@ -127,9 +139,9 @@ def prepare_mbart_pretrain_pairs(path_corpus, path_spm, batch_size=1, valid_rati
     corpus_max_length = max_length(list_corpus)
 
     print("Size of training pairs: %s" % (len(list_corpus)))
-    sp = spm.SentencePieceProcessor()
-    sp.Load(path_spm)
-    corpus_tensor = list(map(sp.EncodeAsIds, list_corpus))
+    corpus_tensor, corpus_tokenizer = tokenize(list_corpus, oov_token='[MASK]')
+    print("[MASK] index:", corpus_tokenizer.word_index['[MASK]'])
+
     # split the dataset into train and valid
     source_train, source_val, target_train, target_val = train_test_split(corpus_tensor,
                                                                           corpus_tensor,
@@ -144,33 +156,32 @@ def prepare_mbart_pretrain_pairs(path_corpus, path_spm, batch_size=1, valid_rati
     train_dataset = tf.data.Dataset.from_generator(lambda: iter(source_train), output_types=tf.int32).padded_batch(
         batch_size,
         padded_shapes=[
-            None]).shuffle(buffer_size=10000)
+            None]).shuffle(size_train)
 
     valid_dataset = tf.data.Dataset.from_generator(lambda: iter(source_val), output_types=tf.int32).padded_batch(
         batch_size,
         padded_shapes=[
-            None]).shuffle(buffer_size=10000)
+            None]).shuffle(size_val)
 
     train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
     valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
-    return train_dataset, valid_dataset, size_train, size_val, corpus_max_length
+    return train_dataset, valid_dataset, corpus_tokenizer, size_train, size_val, corpus_max_length
 
 
-def prepare_test(path_test, path_spm, batch_size=1, src="<En>"):
+def prepare_test(path_test, batch_size=1):
     # read lines in test files
-    list_source = create_dataset(path_test, start=src + " ", end=" " + src)
-    sp = spm.SentencePieceProcessor()
-    sp.Load(path_spm)
+    list_test = create_dataset(path_test)
+
     # encode sentences into id
-    source_test = list(map(sp.EncodeAsIds, list_source))
-    size_test = len(source_test)
-    test_max_length = max_length(source_test)
+    test_tensor, test_tokenizer = tokenize(list_test)
+    size_test = len(test_tensor)
+    test_max_length = max_length(test_tensor)
     print("Size of test: %s" % size_test)
     print("Max length of test set: %s" % test_max_length)
 
     # Create tf dataset, and optimize input pipeline (shuffle, batch, prefetch)
-    test_dataset = tf.data.Dataset.from_generator(lambda: iter(source_test), tf.int32).padded_batch(batch_size,
+    test_dataset = tf.data.Dataset.from_generator(lambda: iter(test_tensor), tf.int32).padded_batch(batch_size,
                                                                                                     padded_shapes=[
                                                                                                         None])
-    return test_dataset, len(sp), test_max_length
+    return test_dataset, test_max_length
