@@ -1,6 +1,4 @@
 /checkpoints
 /logs
-/data/corpus/corpus.multilingual
-/ckpt_base_transformer
-/ckpt_mBART_transformer
-/ckpt_pretrain_mBART
+/final_checkpoints
+/final_training_files
