@@ -95,21 +95,21 @@ def prepare_training_pairs(path_source,
     print("Size of valid set: %s" % size_val)
 
     print("Writing the training pairs into files for future evaluation")
-    timestamp = datetime.now().strftime('%Y-%m-%d')
-    with open(os.path.join(ROOT_DIR, './data/training/train.lang1' + timestamp), 'w', encoding="utf-8") as f:
+    timestamp = datetime.now().strftime('%m-%d-%H-%M')
+    with open(os.path.join(ROOT_DIR, '/data/training/train.lang1_' + timestamp), 'w', encoding="utf-8") as f:
         for src in source_train:
             f.write(convert(source_tokenizer, src[1:-1]) + "\n")
 
-    with open(os.path.join(ROOT_DIR, './data/training/train.lang2' + timestamp), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, '/data/training/train.lang2+' + timestamp), 'w', encoding="utf-8") as f:
         for tar in target_train:
             f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
 
     print("Writing the validation pairs into files for future evaluation")
-    with open(os.path.join(ROOT_DIR, './data/validation/val.lang1' + timestamp), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, '/data/validation/val.lang1_' + timestamp), 'w', encoding="utf-8") as f:
         for src in source_val:
             f.write(convert(source_tokenizer, src[1:-1]) + "\n")
 
-    with open(os.path.join(ROOT_DIR, './data/validation/val.lang2' + timestamp), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, '/data/validation/val.lang2_' + timestamp), 'w', encoding="utf-8") as f:
         for tar in target_val:
             f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
 
