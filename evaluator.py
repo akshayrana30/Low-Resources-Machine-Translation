@@ -52,12 +52,12 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     tar_tokenizer, size_train, size_val = prepare_training_pairs(source,
                                                                  target,
                                                                  batch_size=batch_size,
-                                                                 valid_ratio=0)
+                                                                 valid_ratio=1e-9)
     print("size train", size_train)
     print("size val", size_val)
-    test_dataset, voc_size, test_max_length = prepare_test(input_file_path,
-                                                           src_tokenizer,
-                                                           batch_size=batch_size)
+    test_dataset, test_max_length = prepare_test(input_file_path,
+                                                 src_tokenizer,
+                                                 batch_size=batch_size)
     # calculate vocabulary size
     src_vocsize = len(src_tokenizer.word_index) + 1
     tar_vocsize = len(tar_tokenizer.word_index) + 1
