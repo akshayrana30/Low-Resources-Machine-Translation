@@ -141,7 +141,6 @@ def prepare_mbart_pretrain_pairs(path_corpus, batch_size=1, valid_ratio=0.1, see
     print("Size of training pairs: %s" % (len(list_corpus)))
     corpus_tensor, corpus_tokenizer = tokenize(list_corpus, oov_token='[MASK]')
     print("[MASK] index:", corpus_tokenizer.word_index['[MASK]'])
-
     # split the dataset into train and valid
     source_train, source_val, target_train, target_val = train_test_split(corpus_tensor,
                                                                           corpus_tensor,
@@ -169,12 +168,12 @@ def prepare_mbart_pretrain_pairs(path_corpus, batch_size=1, valid_ratio=0.1, see
     return train_dataset, valid_dataset, corpus_tokenizer, size_train, size_val, corpus_max_length
 
 
-def prepare_test(path_test, batch_size=1):
+def prepare_test(path_test, src_tokenizer, batch_size=1):
     # read lines in test files
     list_test = create_dataset(path_test)
 
     # encode sentences into id
-    test_tensor, test_tokenizer = tokenize(list_test)
+    test_tensor = src_tokenizer.texts_to_sequences(list_test)
     size_test = len(test_tensor)
     test_max_length = max_length(test_tensor)
     print("Size of test: %s" % size_test)

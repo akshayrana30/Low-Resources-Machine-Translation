@@ -1,2 +1,0 @@
-import sentencepiece as spm
-spm.SentencePieceTrainer.Train('--bos_id=2 --eos_id=3 --unk_id=1 --control_symbols=<s>,</s> --user_defined_symbols=<En>,<Fr> --input=../data/corpus/corpus.multilingual --model_prefix=m8000 --vocab_size=8000 --character_coverage=1.0')

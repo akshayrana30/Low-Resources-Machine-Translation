@@ -1,9 +1,8 @@
 import argparse
 import logging
-import sentencepiece as spm
 
 
-def generate_predictions(ckpt, path_spm, input_file_path: str, pred_file_path: str, reverse=False):
+def generate_predictions(ckpt, path_train, path_target, input_file_path: str, pred_file_path: str, reverse=False):
     """Generates predictions for the machine translation task (EN->FR).
     You are allowed to modify this function as needed, but one again, you cannot
     modify any other part of this file. We will be importing only this function
@@ -15,34 +14,36 @@ def generate_predictions(ckpt, path_spm, input_file_path: str, pred_file_path: s
     Returns: None
     """
     # load input file => create test dataloader => (spm encode)
-    from data.dataloaders import prepare_test
+    from data.dataloaders import prepare_test, prepare_training_pairs
     BATCH_SIZE = 128
-    path_spm = path_spm
-    test_dataset, voc_size, test_max_length = prepare_test(input_file_path, path_spm, batch_size=BATCH_SIZE)
+    # load training data, use the tokenizer of train to tokenize test data
+    train_dataset, valid_dataset, src_tokenizer, \
+    tar_tokenizer, size_train, size_val = prepare_training_pairs(path_train,
+                                                                 path_target,
+                                                                 batch_size=1,
+                                                                 valid_ratio=0.1)
+    test_dataset, voc_size, test_max_length = prepare_test(input_file_path, src_tokenizer, batch_size=BATCH_SIZE)
     # create model
-    from models import mBART
+    from models import Transformer
     import tensorflow as tf
     src_vocsize = voc_size
     tar_vocsize = voc_size
+    # create model instance
     optimizer = tf.keras.optimizers.Adam()
-    # All the model we use is follow this setting
-    model = mBART.mBART(voc_size_src=src_vocsize,
-                        voc_size_tar=tar_vocsize,
-                        max_pe=10000,
-                        num_encoders=4,
-                        num_decoders=4,
-                        emb_size=512,
-                        num_head=8,
-                        ff_inner=1024)
+    model = Transformer.Transformer(voc_size_src=src_vocsize,
+                                    voc_size_tar=tar_vocsize,
+                                    max_pe=10000,
+                                    num_encoders=4,
+                                    num_decoders=4,
+                                    emb_size=512,
+                                    num_head=8,
+                                    ff_inner=1024)
 
     # Load CheckPoint
     ckpt_dir = ckpt
     checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
     status = checkpoint.restore(tf.train.latest_checkpoint(ckpt_dir))
     status.assert_existing_objects_matched()
-
-    sp = spm.SentencePieceProcessor()
-    sp.Load(path_spm)
 
     # Greedy Search / Beam Search and write to pred_file_path
     import time
@@ -51,7 +52,7 @@ def generate_predictions(ckpt, path_spm, input_file_path: str, pred_file_path: s
     with open(pred_file_path, 'w', encoding='utf-8') as pred_file:
         for (batch, (inp)) in enumerate(test_dataset):
             print("Evaluating Batch: %s" % batch)
-            translation = translate_batch(model, inp, BATCH_SIZE, sp, reverse=reverse)
+            translation = translate_batch(model, inp, BATCH_SIZE, tar_tokenizer, reverse=reverse)
             for sentence in translation:
                 pred_file.write(sentence.strip() + '\n')
                 pred_file.flush()

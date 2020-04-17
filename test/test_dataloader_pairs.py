@@ -30,7 +30,7 @@ for src, tar in valid_dataset:
     tar_inp = tar[:-1]
     tar_real = tar[1:]
     end = tf.cast(tf.math.logical_not(tf.math.equal(tar_inp, tar_tokenizer.word_index['<end>'])), tf.int32)
-    tar_inp*=end
+    tar_inp *= end
     print("src tensor:", tf.squeeze(src).numpy())
     print("src sentence:", convert(src_tokenizer, tf.squeeze(src).numpy()))
     print("target tensor:", tf.squeeze(tar).numpy())
