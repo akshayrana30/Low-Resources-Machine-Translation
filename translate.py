@@ -31,6 +31,6 @@ def translate_batch(model, inp, batch_size, tar_tokenizer):
         if (predicted_id == tar_tokenizer.word_index['<end>']).numpy().all():
             return output
         output = tf.concat([output, predicted_id], axis=-1)
-    pred_sentences = tar_tokenizer.sequences_to_texts(output)
+    pred_sentences = tar_tokenizer.sequences_to_texts(output.numpy())
     pred_sentences = [x.replace("<start>", "").strip() for x in pred_sentences]
     return pred_sentences
