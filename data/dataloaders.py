@@ -5,6 +5,7 @@ Ref: a. https://www.tensorflow.org/tutorials/load_data/text
 """
 import io
 import os
+import pickle
 from datetime import datetime
 
 import tensorflow as tf
@@ -95,15 +96,12 @@ def prepare_training_pairs(path_source,
     print("Size of train set: %s" % size_train)
     print("Size of valid set: %s" % size_val)
 
-    print("Writing the training pairs into files for future evaluation")
+    print("Writing the training tokenizer into files for future evaluation")
     timestamp = datetime.now().strftime('%m-%d-%H-%M')
-    with open(os.path.join(ROOT_DIR, 'train.lang1_' + timestamp), 'w', encoding="utf-8") as f:
-        for src in source_train:
-            f.write(convert(source_tokenizer, src[1:-1]) + "\n")
-
-    with open(os.path.join(ROOT_DIR, 'train.lang2_' + timestamp), 'w', encoding="utf-8") as f:
-        for tar in target_train:
-            f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
+    with open('src_tokenizer' + timestamp + '.pkl', 'wb') as handle:
+        pickle.dump(source_tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('tar_tokenizer' + timestamp + '.pkl', 'wb') as handle:
+        pickle.dump(target_tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     print("Writing the validation pairs into files for future evaluation")
     with open(os.path.join(ROOT_DIR, 'val.lang1_' + timestamp), 'w', encoding="utf-8") as f:

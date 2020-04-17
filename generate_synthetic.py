@@ -28,15 +28,17 @@ def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_fi
     Returns: None
     """
     # load input file => create test dataloader => (spm encode)
-    from data.dataloaders import prepare_test, prepare_training_pairs
+    from data.dataloaders import prepare_test
     BATCH_SIZE = 128
     TOTAL_ITER = int((num_sync / 128))
-    # load training data, use the tokenizer of train to tokenize test data
-    train_dataset, valid_dataset, src_tokenizer, \
-    tar_tokenizer, size_train, size_val = prepare_training_pairs(path_src,
-                                                                 path_tar,
-                                                                 batch_size=1,
-                                                                 valid_ratio=0.1)
+
+    # load  tokenizer of train to tokenize test data
+    import pickle
+    f_src = open(path_src, 'r')
+    f_tar = open(path_tar, 'r')
+    src_tokenizer = pickle.load(f_src)
+    tar_tokenizer = pickle.load(f_tar)
+
     test_dataset, test_max_length = prepare_test(input_file_path, src_tokenizer, batch_size=BATCH_SIZE)
     # create model
     from models import Transformer

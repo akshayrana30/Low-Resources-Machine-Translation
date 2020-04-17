@@ -25,6 +25,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     # Include essential module for evaluation
     import os
     import json
+    import pickle
     import time
     import tensorflow as tf
     from data.dataloaders import prepare_training_pairs, prepare_test
@@ -45,23 +46,19 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     # ---------------------------------------------------------------------
     # Create test dataloader from input file (tokenized and map to sequence)
 
-    # Todo: The final training and target file is needed, so as to use the same tokenizer on test data,
+    # Todo: The final training and target tokenizer is needed, so as to use the same tokenizer on test data,
     #  because we didn't build a dictionary file.
+    f_src = open(source, 'r')
+    f_tar = open(target, 'r')
+    src_tokenizer = pickle.load(f_src)
+    tar_tokenizer = pickle.load(f_tar)
 
-    train_dataset, valid_dataset, src_tokenizer, \
-    tar_tokenizer, size_train, size_val = prepare_training_pairs(source,
-                                                                 target,
-                                                                 batch_size=batch_size,
-                                                                 valid_ratio=1e-9)
-    print("size train", size_train)
-    print("size val", size_val)
     test_dataset, test_max_length = prepare_test(input_file_path,
                                                  src_tokenizer,
                                                  batch_size=batch_size)
     # calculate vocabulary size
     src_vocsize = len(src_tokenizer.word_index) + 1
     tar_vocsize = len(tar_tokenizer.word_index) + 1
-
     # ---------------------------------------------------------------------
     # Create the instance of model to load checkpoints
     # Todo: Define the model that fit the checkpoints you want to load
