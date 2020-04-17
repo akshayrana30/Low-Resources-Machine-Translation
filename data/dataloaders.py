@@ -85,8 +85,8 @@ def prepare_training_pairs(path_source,
         target_train = target_train + list_syn_target
 
     # encode text into index of words (only fit tokenizer on training set)
-    source_train, source_tokenizer = tokenize(source_train)
-    target_train, target_tokenizer = tokenize(target_train)
+    source_train, source_tokenizer = tokenize(source_train, lower=False)
+    target_train, target_tokenizer = tokenize(target_train, lower=False)
     source_val = source_tokenizer.texts_to_sequences(source_val)
     target_val = target_tokenizer.texts_to_sequences(target_val)
 
