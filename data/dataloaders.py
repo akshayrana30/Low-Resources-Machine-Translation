@@ -5,16 +5,10 @@ Ref: a. https://www.tensorflow.org/tutorials/load_data/text
 """
 import io
 import os
-from random import shuffle
-import unicodedata
-import numpy as np
+from datetime import datetime
 import tensorflow as tf
-import tensorflow_datasets as tfds
 
 from sklearn.model_selection import train_test_split
-
-from preprocessing import tokenizer, punctuation_remover
-import sentencepiece as spm
 from definition import ROOT_DIR
 
 
@@ -61,7 +55,8 @@ def prepare_training_pairs(path_source,
                            path_syn_target=None,
                            batch_size=1,
                            valid_ratio=0.2,
-                           seed=1234):
+                           seed=1234,
+                           name=None):
     """
     Provide dataloader for translation from aligned training pairs
     """
@@ -99,12 +94,22 @@ def prepare_training_pairs(path_source,
     print("Size of train set: %s" % size_train)
     print("Size of valid set: %s" % size_val)
 
+    print("Writing the training pairs into files for future evaluation")
+    timestamp = name + datetime.strftime('%Y-%m-%d')
+    with open(os.path.join(ROOT_DIR, './data/training/train.lang1' + timestamp), 'w', encoding="utf-8") as f:
+        for src in source_train:
+            f.write(convert(source_tokenizer, src[1:-1]) + "\n")
+
+    with open(os.path.join(ROOT_DIR, './data/training/train.lang2' + timestamp), 'w', encoding="utf-8") as f:
+        for tar in target_train:
+            f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
+
     print("Writing the validation pairs into files for future evaluation")
-    with open(os.path.join(ROOT_DIR, './data/pairs/val.lang1'), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, './data/validation/val.lang1' + timestamp), 'w', encoding="utf-8") as f:
         for src in source_val:
             f.write(convert(source_tokenizer, src[1:-1]) + "\n")
 
-    with open(os.path.join(ROOT_DIR, './data/pairs/val.lang2'), 'w', encoding="utf-8") as f:
+    with open(os.path.join(ROOT_DIR, './data/validation/val.lang2' + timestamp), 'w', encoding="utf-8") as f:
         for tar in target_val:
             f.write(convert(target_tokenizer, tar[1:-1]) + "\n")
 

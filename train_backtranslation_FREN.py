@@ -63,7 +63,8 @@ def main(argv):
                                                                  FLAGS.syn_src,
                                                                  FLAGS.syn_tar,
                                                                  batch_size=FLAGS.batch_size,
-                                                                 valid_ratio=0.1)
+                                                                 valid_ratio=0.1,
+                                                                 name="FREN")
 
     # calculate vocabulary size
     src_vocsize = len(src_tokenizer.word_index) + 1
