@@ -2,19 +2,18 @@
 Ref: https://arxiv.org/abs/1409.0473
 [ICLR 2015] NEURAL MACHINE TRANSLATION BY JOINTLY LEARNING TO ALIGN AND TRANSLATE
 """
+import datetime
 import os
 import time
-import datetime
-import contextlib
-import tensorflow as tf
 
+import sentencepiece as spm
+import tensorflow as tf
 from absl import app
 from absl import flags
 from absl import logging
 
 from data.dataloaders import prepare_mbart_pretrain_pairs
 from models import mBART, Transformer
-import sentencepiece as spm
 
 FLAGS = flags.FLAGS
 

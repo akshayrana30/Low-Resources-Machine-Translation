@@ -1,11 +1,10 @@
 """
 script to examine if dataloader for training pairs works fine
 """
-import os
-import tensorflow as tf
-from data.dataloaders import prepare_mbart_pretrain_pairs
-from definition import ROOT_DIR
 import sentencepiece as spm
+import tensorflow as tf
+
+from data.dataloaders import prepare_mbart_pretrain_pairs
 
 
 def convert(lang, tensor):

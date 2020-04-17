@@ -4,8 +4,8 @@ Ref:
 [2017] Attention Is All You Need (https://arxiv.org/abs/1706.03762)
 The Illustrated Transformer (https://jalammar.github.io/illustrated-transformer/)
 """
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 
 
 class Transformer(tf.keras.Model):

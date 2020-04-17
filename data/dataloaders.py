@@ -6,9 +6,10 @@ Ref: a. https://www.tensorflow.org/tutorials/load_data/text
 import io
 import os
 from datetime import datetime
-import tensorflow as tf
 
+import tensorflow as tf
 from sklearn.model_selection import train_test_split
+
 from definition import ROOT_DIR
 
 

@@ -1,8 +1,9 @@
 """
 The script to create training corpus for mBART
 """
-import os
 import io
+import os
+
 from definition import ROOT_DIR
 
 processed_en = "./data/corpus/processed.en/unaligned.en"
@@ -27,7 +28,7 @@ def main():
     with open(os.path.join(ROOT_DIR, output), 'w', encoding='utf-8') as f:
         for line in multi_list:
             line = line.rstrip()
-            f.write(line+"\n")
+            f.write(line + "\n")
 
 
 if __name__ == '__main__':

@@ -2,8 +2,8 @@
 script to examine if dataloader for training pairs works fine
 """
 import tensorflow as tf
+
 from data.dataloaders import prepare_training_pairs
-import sentencepiece as spm
 
 
 def convert(lang, tensor):

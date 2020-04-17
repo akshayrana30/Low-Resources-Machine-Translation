@@ -1,5 +1,5 @@
 {
-  "batch_size":128,
+  "batch_size": 128,
   "src": "./final_training_files/train.lang1_04-17-04-38",
   "tar": "./final_training_files/train.lang2_04-17-04-38",
   "ckpt": "./final_checkpoints/"

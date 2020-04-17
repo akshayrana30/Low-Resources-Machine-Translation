@@ -1,5 +1,5 @@
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 
 
 def get_angles(pos, i, d_model):
@@ -37,7 +37,6 @@ def create_look_ahead_mask(size):
 
 
 def scaled_dot_product_attention(q, k, v, mask):
-
     matmul_qk = tf.matmul(q, k, transpose_b=True)  # (..., seq_len_q, seq_len_k)
 
     # scale matmul_qk

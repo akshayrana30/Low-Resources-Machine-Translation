@@ -2,18 +2,17 @@
 Ref: https://arxiv.org/abs/1409.0473
 [ICLR 2015] NEURAL MACHINE TRANSLATION BY JOINTLY LEARNING TO ALIGN AND TRANSLATE
 """
+import datetime
 import os
 import time
-import datetime
-import contextlib
-import tensorflow as tf
 
+import tensorflow as tf
 from absl import app
 from absl import flags
 from absl import logging
 
 from data.dataloaders import prepare_training_pairs
-from models import Transformer,google_transformer
+from models import Transformer, google_transformer
 
 FLAGS = flags.FLAGS
 
@@ -70,6 +69,7 @@ def main(argv):
                                            pe_input=src_vocsize,
                                            pe_target=tar_vocsize,
                                            rate=0.1)
+
     # ----------------------------------------------------------------------------------
     # Choose the Optimizor, Loss Function, and Metrics
     # create custom learning rate schedule
