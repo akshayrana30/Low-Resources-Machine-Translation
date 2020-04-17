@@ -56,7 +56,7 @@ def prepare_training_pairs(path_source,
                            batch_size=1,
                            valid_ratio=0.2,
                            seed=1234,
-                           name=None):
+                           name="sync"):
     """
     Provide dataloader for translation from aligned training pairs
     """
@@ -95,7 +95,7 @@ def prepare_training_pairs(path_source,
     print("Size of valid set: %s" % size_val)
 
     print("Writing the training pairs into files for future evaluation")
-    timestamp = name + datetime.now().strftime('%Y-%m-%d')
+    timestamp = datetime.now().strftime('%Y-%m-%d')
     with open(os.path.join(ROOT_DIR, './data/training/train.lang1' + timestamp), 'w', encoding="utf-8") as f:
         for src in source_train:
             f.write(convert(source_tokenizer, src[1:-1]) + "\n")
