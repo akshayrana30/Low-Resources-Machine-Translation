@@ -48,8 +48,8 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
 
     # Todo: The final training and target tokenizer is needed, so as to use the same tokenizer on test data,
     #  because we didn't build a dictionary file.
-    f_src = open(source, 'r')
-    f_tar = open(target, 'r')
+    f_src = open(source, 'rb')
+    f_tar = open(target, 'rb')
     src_tokenizer = pickle.load(f_src)
     tar_tokenizer = pickle.load(f_tar)
 

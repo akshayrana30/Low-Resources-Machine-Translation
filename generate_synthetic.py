@@ -34,8 +34,8 @@ def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_fi
 
     # load  tokenizer of train to tokenize test data
     import pickle
-    f_src = open(path_src, 'r')
-    f_tar = open(path_tar, 'r')
+    f_src = open(path_src, 'rb')
+    f_tar = open(path_tar, 'rb')
     src_tokenizer = pickle.load(f_src)
     tar_tokenizer = pickle.load(f_tar)
 
