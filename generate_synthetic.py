@@ -38,12 +38,12 @@ def generate_predictions(ckpt, path_src, path_tar, input_file_path: str, pred_fi
                                                                  path_tar,
                                                                  batch_size=1,
                                                                  valid_ratio=0.1)
-    test_dataset, voc_size, test_max_length = prepare_test(input_file_path, src_tokenizer, batch_size=BATCH_SIZE)
+    test_dataset, test_max_length = prepare_test(input_file_path, src_tokenizer, batch_size=BATCH_SIZE)
     # create model
     from models import Transformer
     import tensorflow as tf
-    src_vocsize = voc_size
-    tar_vocsize = voc_size
+    src_vocsize = len(src_tokenizer.word_index) + 1
+    tar_vocsize = len(tar_tokenizer.word_index) + 1
     # create model instance
     optimizer = tf.keras.optimizers.Adam()
     model = Transformer.Transformer(voc_size_src=src_vocsize,
