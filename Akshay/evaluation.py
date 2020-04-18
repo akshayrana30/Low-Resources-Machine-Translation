@@ -99,13 +99,15 @@ def get_scores(gold_file_path, pred_file_path, target_tokenizer,
 
 
 def generate_evaluations(transformer, input_path, output_path,
-                         dataset, inp_lang_tokenizer, targ_lang_tokenizer, max_length_targ):
-    with open(input_path, 'w', encoding='utf-8', buffering=1) as i_file, open(output_path, 'w', encoding='utf-8',
-                                                                              buffering=1) as o_file:
+                         dataset, inp_lang_tokenizer,
+                         targ_lang_tokenizer, max_length_targ):
+    with open(input_path, 'w', encoding='utf-8', buffering=1) as i_file, \
+         open(output_path, 'w', encoding='utf-8', buffering=1) as o_file:
         for batch, inp in enumerate(dataset):
             if batch % 50 == 0:
                 print("Generating for batch", batch)
-            predicted = translate_batch(inp, targ_lang_tokenizer, transformer, max_length_targ)
+            predicted = translate_batch(inp, targ_lang_tokenizer,
+                                        transformer, max_length_targ)
             converted_token_to_text = [x.split("<end>")[0].replace("<start>", "").strip() for x in
                                        inp_lang_tokenizer.sequences_to_texts(inp.numpy())]
             for g_fr, p_fr in zip(converted_token_to_text, predicted):
