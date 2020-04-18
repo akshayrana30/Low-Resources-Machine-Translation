@@ -7,7 +7,6 @@ import tensorflow as tf
 import numpy as np
 import pickle
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from sklearn.model_selection import train_test_split
 from config import *
 
 
@@ -52,6 +51,14 @@ def load_lang(lang_path):
   return io.open(root_path+lang_path, encoding='UTF-8').read().strip().split('\n')
 
 
+def load_test_generator(lang_path, input_tokenizer, batch_size):
+  test_data = io.open(lang_path, encoding='UTF-8').read().strip().split('\n')
+  test_data = [preprocess_sentence(x, "en", aligned=True) for x in test_data]
+  test_tensor = input_tokenizer.texts_to_sequences(test_data)
+  test_tensor = pad_sequences(test_tensor, padding='post')
+  test_dataset = tf.data.Dataset.from_tensor_slices(test_tensor).batch(batch_size)
+  return test_dataset
+
 def dataloader_unaligned(preprocess=True):
   unaligned_en = load_lang(unaligned_en_path)
   unaligned_fr = load_lang(unaligned_fr_path)
@@ -94,6 +101,7 @@ def tokenize(aligned_lang, unaligned_lang, num_words):
 
 
 def train_val_split(input_lang, output_lang):
+  from sklearn.model_selection import train_test_split
   return train_test_split(input_lang, output_lang,
                           test_size=train_val_split_ratio, random_state=random_seed_for_split)
 

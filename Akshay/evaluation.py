@@ -5,12 +5,11 @@ from Transformers_Google import *
 from config import *
 
 
-def evaluate_batch(inp_tensor, targ_lang_tokenizer, transformer,
-                   batch_size_for_val, max_length_targ):
+def evaluate_batch(inp_tensor, targ_lang_tokenizer, transformer, max_length_targ):
   # Expecting input from the val_dataset which is already tokenised.
   
     encoder_input = tf.convert_to_tensor(inp_tensor)
-    decoder_input = tf.expand_dims([targ_lang_tokenizer.word_index['<start>']] * batch_size_for_val, axis=1)
+    decoder_input = tf.expand_dims([targ_lang_tokenizer.word_index['<start>']] * encoder_input.shape[0], axis=1)
     output = decoder_input
 
     for i in range(max_length_targ):
@@ -42,10 +41,8 @@ def evaluate_batch(inp_tensor, targ_lang_tokenizer, transformer,
     return output, attention_weights
 
 
-def translate_batch(inp, targ_lang_tokenizer, transformer,
-                    batch_size_for_val, max_length_targ):
-    output,_ = evaluate_batch(inp, targ_lang_tokenizer, transformer, 
-                              batch_size_for_val, max_length_targ)
+def translate_batch(inp, targ_lang_tokenizer, transformer, max_length_targ):
+    output,_ = evaluate_batch(inp, targ_lang_tokenizer, transformer, max_length_targ)
     pred_sentences = targ_lang_tokenizer.sequences_to_texts(output.numpy())
     pred_sentences = [x.split("<end>")[0].replace("<start>","").strip() for x in pred_sentences]
     return pred_sentences
