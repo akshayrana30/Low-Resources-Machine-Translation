@@ -7,7 +7,8 @@ source = "../data/pairs/dummy_test.lang1"
 target = "../data/pairs/dummy_test.lang2"
 
 train_dataset, valid_dataset, src_tokenizer, tar_tokenizer, size_train, \
-size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=1, valid_ratio=0.01, seed=12)
+size_val, source_max_length, target_max_length = prepare_training_pairs(source, target, batch_size=1, valid_ratio=0.01,
+                                                                        seed=12)
 
 print(src_tokenizer.index_word)
 

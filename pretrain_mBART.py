@@ -2,12 +2,12 @@
 Ref: https://arxiv.org/abs/1409.0473
 [ICLR 2015] NEURAL MACHINE TRANSLATION BY JOINTLY LEARNING TO ALIGN AND TRANSLATE
 """
+import datetime
 import os
 import time
-import datetime
-import contextlib
-import tensorflow as tf
 
+import sentencepiece as spm
+import tensorflow as tf
 from absl import app
 from absl import flags
 from absl import logging
@@ -19,6 +19,8 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('corpus', './data/corpus/corpus.multilingual',
                     'path of source language')
+flags.DEFINE_string('spm', './data/preprocessing/m.model',
+                    'path of sentencepiece model')
 flags.DEFINE_string('ckpt', './checkpoints',
                     'path of target language')
 flags.DEFINE_integer('seed', 1234,
@@ -27,9 +29,9 @@ flags.DEFINE_integer('epochs', 100,
                      'number of epochs')
 flags.DEFINE_integer('batch_size', 32,
                      'batch size')
-flags.DEFINE_integer('num_enc', 8,
+flags.DEFINE_integer('num_enc', 12,
                      'number of stacked encoder')
-flags.DEFINE_integer('num_dec', 8,
+flags.DEFINE_integer('num_dec', 12,
                      'number of stacked decoder')
 flags.DEFINE_integer('num_head', 8,
                      'number of head for multi-head attention')
@@ -43,17 +45,19 @@ flags.DEFINE_float('valid_ratio', 0.1,
 
 def main(argv):
     # Creating dataloaders for training and validation
+    sp = spm.SentencePieceProcessor()
+    sp.Load(FLAGS.spm)
+    corpus_vocsize = len(sp)
     logging.info("Creating the source dataloader from: %s" % FLAGS.corpus)
-    train_dataset, valid_dataset, corpus_tokenizer, size_train, \
-    size_val, corpus_max_length = prepare_mbart_pretrain_pairs(path_corpus=FLAGS.corpus,
-                                                               batch_size=FLAGS.batch_size,
-                                                               valid_ratio=FLAGS.valid_ratio)
-
-    tf.print("corpus max:", corpus_max_length)
+    train_dataset, valid_dataset, size_train, size_val \
+        , corpus_max_length = prepare_mbart_pretrain_pairs(FLAGS.corpus,
+                                                           FLAGS.spm,
+                                                           batch_size=FLAGS.batch_size,
+                                                           valid_ratio=0.1)
 
     # calculate vocabulary size
-    src_vocsize = len(corpus_tokenizer.word_index) + 1
-    tar_vocsize = len(corpus_tokenizer.word_index) + 1
+    src_vocsize = corpus_vocsize
+    tar_vocsize = corpus_vocsize
     # ----------------------------------------------------------------------------------
     # Creating the instance of the model specified.
     logging.info("Create Transformer Model")
@@ -110,15 +114,15 @@ def main(argv):
     @tf.function(input_signature=train_step_signature)
     def train_step(inp):
         # set target
-        tar_inp = inp[:, :-1]
-        tar_real = inp[:, 1:]
+        tar_inp = inp[:, :-2]
+        tar_real = inp[:, 2:]
         # remember the padding
         pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, 0)), tf.int32)
-        en = tf.math.equal(inp, 2)
-        fr = tf.math.equal(inp, 3)
+        en = tf.math.equal(inp, sp.piece_to_id('<En>'))
+        fr = tf.math.equal(inp, sp.piece_to_id('<Fr>'))
         # token maskin
         mask = tf.random.uniform(tf.shape(inp))
-        mask = tf.math.less(mask, 0.3)
+        mask = tf.math.less(mask, 0.2)
         mask = tf.math.logical_or(tf.math.logical_not(mask), tf.math.logical_or(en, fr))
         mask = tf.cast(mask, tf.int32)
         # [MASK] token index is 1
@@ -151,15 +155,15 @@ def main(argv):
     @tf.function(input_signature=train_step_signature)
     def valid_step(inp):
         # set target
-        tar_inp = inp[:, :-1]
-        tar_real = inp[:, 1:]
+        tar_inp = inp[:, :-2]
+        tar_real = inp[:, 2:]
         # remember the padding
         pad = tf.cast(tf.math.logical_not(tf.math.equal(inp, 0)), tf.int32)
-        en = tf.math.equal(inp, 2)
-        fr = tf.math.equal(inp, 3)
+        en = tf.math.equal(inp, sp.piece_to_id('<En>'))
+        fr = tf.math.equal(inp, sp.piece_to_id('<Fr>'))
         # token maskin
         mask = tf.random.uniform(tf.shape(inp))
-        mask = tf.math.less(mask, 0.3)
+        mask = tf.math.less(mask, 0.2)
         mask = tf.math.logical_or(tf.math.logical_not(mask), tf.math.logical_or(en, fr))
         mask = tf.cast(mask, tf.int32)
         # [MASK] token index is 1

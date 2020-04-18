@@ -4,8 +4,8 @@ Ref:
 [2017] Attention Is All You Need (https://arxiv.org/abs/1706.03762)
 The Illustrated Transformer (https://jalammar.github.io/illustrated-transformer/)
 """
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 
 
 class Transformer(tf.keras.Model):
@@ -94,11 +94,11 @@ class EncoderUnit(tf.keras.Model):
         self.attention = MultiHeadAttention(emb_size, num_head)
 
         # Todo: Layer Norm which axis? -1(emb dimension) or 1(sequence length)
-        self.layerNorm_multihead = tf.keras.layers.LayerNormalization()
+        self.layerNorm_multihead = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
         # position-wise feedforward neural network layer
         self.ffnn = FeedForwardNN(ff_inner, emb_size)
-        self.layerNorm_FFNN = tf.keras.layers.LayerNormalization()
+        self.layerNorm_FFNN = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
         # regularization by dropout
         self.dropout1 = tf.keras.layers.Dropout(p_dropout)
@@ -126,15 +126,15 @@ class DecoderUnit(tf.keras.Model):
 
         # masked multi-head attention
         self.masked_attention = MultiHeadAttention(emb_size, num_head)
-        self.layerNorm_masked = tf.keras.layers.LayerNormalization()
+        self.layerNorm_masked = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
         # encoder-decoder attention
         self.enc_dec_attention = MultiHeadAttention(emb_size, num_head)
-        self.layerNorm_enc_dec = tf.keras.layers.LayerNormalization()
+        self.layerNorm_enc_dec = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
         # position-wise feed-forward neural network layer
         self.ffnn = FeedForwardNN(ff_inner, emb_size)
-        self.layerNorm_FFNN = tf.keras.layers.LayerNormalization()
+        self.layerNorm_FFNN = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
         # regularization by dropout
         self.dropout1 = tf.keras.layers.Dropout(p_dropout)
