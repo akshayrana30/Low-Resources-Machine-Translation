@@ -26,7 +26,7 @@ def save_emb(emb, path):
 
 if __name__ == "__main__":
     lang = "en"
-    emb_dim = 256
+    emb_dim = 128
     vocab_size=20000
     _, _, _, input_tokenizer, _, _, _, \
     _, target_tokenizer,_ = load_data(False, 
