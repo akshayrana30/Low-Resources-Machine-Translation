@@ -167,6 +167,8 @@ def train():
             pred_file_path = root_path+"temp_pred_epoch_"+str(epoch+1)+".txt"
             get_scores(gold_file_path, pred_file_path, target_tokenizer, 
                         val_dataset, target_text_val, transformer, val_batch_size, max_length_targ)
+        
+        print('Time taken for Epoch: {} secs\n'.format(time.time() - start))
 
     return transformer, input_tokenizer, target_tokenizer, max_length_inp, max_length_targ
 
