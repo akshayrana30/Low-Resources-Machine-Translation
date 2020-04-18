@@ -2,15 +2,17 @@ import subprocess
 import time
 
 import tensorflow as tf
-from Transformers_Google import *
-from config import *
+from Transformers_Google import create_masks
+# from config import *
 
 
-def evaluate_batch(inp_tensor, targ_lang_tokenizer, transformer, max_length_targ):
-  # Expecting input from the val_dataset which is already tokenised.
-  
+def evaluate_batch(inp_tensor, targ_lang_tokenizer,
+                   transformer, max_length_targ):
+    # Expecting input from the val_dataset which is already tokenised.
+
     encoder_input = tf.convert_to_tensor(inp_tensor)
-    decoder_input = tf.expand_dims([targ_lang_tokenizer.word_index['<start>']] * encoder_input.shape[0], axis=1)
+    start_var = [targ_lang_tokenizer.word_index['<start>']]
+    decoder_input = tf.expand_dims(start_var * encoder_input.shape[0], axis=1)
     output = decoder_input
 
     for i in range(max_length_targ):
@@ -31,19 +33,20 @@ def evaluate_batch(inp_tensor, targ_lang_tokenizer, transformer, max_length_targ
 
         predicted_id = tf.cast(tf.argmax(predictions, axis=-1), tf.int32)
 
-        # return the result if the predicted_id is equal to the end token for all the batches
-        if (predicted_id == targ_lang_tokenizer.word_index['<end>']).numpy().all():
+        end_var = targ_lang_tokenizer.word_index['<end>']
+        if (predicted_id == end_var).numpy().all():
             return output, attention_weights
 
-        # concatentate the predicted_id to the output which is given to the decoder
-        # as its input.
+        # concatentate the predicted_id to the output 
+        # which is given to the decode as its input.
         output = tf.concat([output, predicted_id], axis=-1)
 
     return output, attention_weights
 
 
 def translate_batch(inp, targ_lang_tokenizer, transformer, max_length_targ):
-    output,_ = evaluate_batch(inp, targ_lang_tokenizer, transformer, max_length_targ)
+    output, _ = evaluate_batch(inp, targ_lang_tokenizer,
+                               transformer, max_length_targ)
     pred_sentences = targ_lang_tokenizer.sequences_to_texts(output.numpy())
     pred_sentences = [x.split("<end>")[0].replace("<start>", "").strip() for x in pred_sentences]
     return pred_sentences
@@ -71,10 +74,9 @@ def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: b
 
 
 def get_scores(gold_file_path, pred_file_path, target_tokenizer,
-               val_dataset, target_text_val, transformer, batch_size_for_val, max_length_targ):
+               val_dataset, target_text_val, transformer, max_length_targ):
     new_start = time.time()
     print("--Saving files to get Bleu Scores--")
-    print("Batch Size for Evaluation", batch_size_for_val)
     index = 0
     with open(gold_file_path, 'w', encoding='utf-8', buffering=1) as gold_file, open(pred_file_path, 'w',
                                                                                      encoding='utf-8',
@@ -82,9 +84,9 @@ def get_scores(gold_file_path, pred_file_path, target_tokenizer,
         for (batch, (inp, _)) in enumerate(val_dataset):
             if batch % 5 == 0:
                 print("Evaluating for batch", batch)
-            preds = translate_batch(inp, target_tokenizer, transformer, batch_size_for_val, max_length_targ)
-            target = target_text_val[index:index + batch_size_for_val]
-            index += batch_size_for_val
+            preds = translate_batch(inp, target_tokenizer, transformer, max_length_targ)
+            target = target_text_val[index:index + inp.shape[0]]
+            index += np.shape[0]
             for g_fr, p_fr in zip(target, preds):
                 gold_file.write(g_fr.strip() + '\n')
                 pred_file.write(p_fr.strip() + '\n')
@@ -103,8 +105,7 @@ def generate_evaluations(transformer, input_path, output_path,
         for batch, inp in enumerate(dataset):
             if batch % 50 == 0:
                 print("Generating for batch", batch)
-            predicted = translate_batch(inp, targ_lang_tokenizer, transformer,
-                                        dataset._batch_size.numpy(), max_length_targ)
+            predicted = translate_batch(inp, targ_lang_tokenizer, transformer, max_length_targ)
             converted_token_to_text = [x.split("<end>")[0].replace("<start>", "").strip() for x in
                                        inp_lang_tokenizer.sequences_to_texts(inp.numpy())]
             for g_fr, p_fr in zip(converted_token_to_text, predicted):

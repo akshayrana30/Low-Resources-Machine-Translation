@@ -1,10 +1,19 @@
 import time
 
 import tensorflow as tf
-from Transformers_Google import *
-from config import *
-from dataloaders_processed import *
-from evaluation import *
+from Transformers_Google import create_masks, CustomSchedule, Transformer
+from dataloaders_processed import load_data, dataloader_unaligned
+from evaluation import generate_evaluations, get_scores
+from config import (reverse_translate, add_synthetic_data,
+                    load_emb, inp_vocab_size,
+                    tar_vocab_size, emb_size,
+                    train_batch_size, val_batch_size,
+                    num_layers, d_model, num_heads, dff, dropout_rate,
+                    root_path, evaluate_bleu_every, evaluate_val_loss_every,
+                    save_every, checkpoint_path, load_from_checkpoint,
+                    number_of_samples, generate_input_path,
+                    generate_output_path, generate_samples,
+                    EPOCHS)
 
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
     from_logits=True, reduction='none')
@@ -12,16 +21,16 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
 
 def load_dataset():
     input_train, input_val, \
-    input_text_val, \
-    input_tokenizer, e_emb, \
-    target_train, target_val, \
-    target_text_val, \
-    target_tokenizer, d_emb = load_data(reverse_translate,
-                                        add_synthetic_data,
-                                        load_emb,
-                                        inp_vocab_size,
-                                        tar_vocab_size,
-                                        emb_size)
+     input_text_val, \
+     input_tokenizer, e_emb, \
+     target_train, target_val, \
+     target_text_val, \
+     target_tokenizer, d_emb = load_data(reverse_translate,
+                                         add_synthetic_data,
+                                         load_emb,
+                                         inp_vocab_size,
+                                         tar_vocab_size,
+                                         emb_size)
 
     max_length_targ, max_length_inp = max_length(target_train), max_length(input_train)
     BUFFER_SIZE = input_train.shape[0]
@@ -33,7 +42,7 @@ def load_dataset():
     val_dataset = val_dataset.batch(val_batch_size, drop_remainder=True)
 
     return train_dataset, val_dataset, input_tokenizer, target_tokenizer, \
-           e_emb, d_emb, max_length_inp, max_length_targ, target_text_val
+            e_emb, d_emb, max_length_inp, max_length_targ, target_text_val
 
 
 def loss_function(real, pred):
@@ -90,13 +99,13 @@ def max_length(tensor):
 
 def train():
     train_dataset, val_dataset, input_tokenizer, \
-    target_tokenizer, e_emb, d_emb, \
-    max_length_inp, max_length_targ, target_text_val = load_dataset()
+     target_tokenizer, e_emb, d_emb, \
+     max_length_inp, max_length_targ, target_text_val = load_dataset()
     print("-- Tf Dataset created --")
 
     learning_rate = CustomSchedule(d_model)
-    optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98,
-                                         epsilon=1e-9)
+    optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9,
+                                         beta_2=0.98, epsilon=1e-9)
 
     train_loss = tf.keras.metrics.Mean(name='train_loss')
     train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
@@ -160,18 +169,21 @@ def train():
             print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
                                                                 ckpt_save_path))
 
-        if (epoch+1)%evaluate_bleu_every==0:
-            gold_file_path = root_path+"temp_gold_epoch_"+str(epoch+1)+".txt"
-            pred_file_path = root_path+"temp_pred_epoch_"+str(epoch+1)+".txt"
-            get_scores(gold_file_path, pred_file_path, target_tokenizer, 
-                        val_dataset, target_text_val, transformer, val_batch_size, max_length_targ)
-        
+        if (epoch + 1) % evaluate_bleu_every == 0:
+            gold_file_path = root_path + "temp_gold_epoch_" + str(epoch + 1) + ".txt"
+            pred_file_path = root_path + "temp_pred_epoch_" + str(epoch + 1) + ".txt"
+            get_scores(gold_file_path, pred_file_path, target_tokenizer,
+                       val_dataset, target_text_val,
+                       transformer, max_length_targ)
+
         print('Time taken for Epoch: {} secs\n'.format(time.time() - start))
 
-    return transformer, input_tokenizer, target_tokenizer, max_length_inp, max_length_targ
+    return transformer, input_tokenizer, target_tokenizer, \
+        max_length_inp, max_length_targ
 
 
-def generate(transformer, input_tokenizer, target_tokenizer, max_length_inp, max_length_targ):
+def generate(transformer, input_tokenizer, target_tokenizer,
+             max_length_inp, max_length_targ):
     if reverse_translate:
         # input is french, and output is english
         output_lang, input_lang = dataloader_unaligned()
@@ -209,7 +221,10 @@ def generate(transformer, input_tokenizer, target_tokenizer, max_length_inp, max
 
 
 if __name__ == "__main__":
+    # Train the model using parameters in the config file.
     transformer, input_tokenizer, \
-    target_tokenizer, max_length_inp, max_length_targ = train()
+     target_tokenizer, max_length_inp, max_length_targ = train()
     if generate_samples:
-        generate(transformer, input_tokenizer, target_tokenizer, max_length_inp, max_length_targ)
+        # Generate Samples for back translation
+        generate(transformer, input_tokenizer, target_tokenizer,
+                 max_length_inp, max_length_targ)

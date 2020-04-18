@@ -3,12 +3,18 @@ import pickle
 import re
 import tensorflow as tf
 import numpy as np
-import pickle
 import unicodedata
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from config import *
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+from config import (root_path,
+                    train_val_split_ratio,
+                    random_seed_for_split,
+                    unaligned_en_path,
+                    unaligned_fr_path,
+                    aligned_en_synth_path,
+                    aligned_fr_synth_path,
+                    aligned_en_path,
+                    aligned_fr_path)
 
 
 def unicode_to_ascii(s):
@@ -52,12 +58,13 @@ def load_lang(lang_path):
 
 
 def load_test_generator(lang_path, input_tokenizer, batch_size):
-  test_data = io.open(lang_path, encoding='UTF-8').read().strip().split('\n')
-  test_data = [preprocess_sentence(x, "en", aligned=True) for x in test_data]
-  test_tensor = input_tokenizer.texts_to_sequences(test_data)
-  test_tensor = pad_sequences(test_tensor, padding='post')
-  test_dataset = tf.data.Dataset.from_tensor_slices(test_tensor).batch(batch_size)
-  return test_dataset
+    test_data = io.open(lang_path, encoding='UTF-8').read().strip().split('\n')
+    test_data = [preprocess_sentence(x, "en", aligned=True) for x in test_data]
+    test_tensor = input_tokenizer.texts_to_sequences(test_data)
+    test_tensor = pad_sequences(test_tensor, padding='post')
+    test_dataset = tf.data.Dataset.from_tensor_slices(test_tensor).batch(batch_size)
+    return test_dataset
+
 
 def dataloader_unaligned(preprocess=True):
     unaligned_en = load_lang(unaligned_en_path)
@@ -72,8 +79,10 @@ def dataloader_aligned(preprocess=True, add_special_tag=True):
     aligned_en = load_lang(aligned_en_path)
     aligned_fr = load_lang(aligned_fr_path)
     if preprocess:
-        aligned_en = [preprocess_sentence(x, "en", aligned=True, add_special_tag=add_special_tag) for x in aligned_en]
-        aligned_fr = [preprocess_sentence(x, "fr", aligned=True, add_special_tag=add_special_tag) for x in aligned_fr]
+        aligned_en = [preprocess_sentence(x, "en", aligned=True,
+                                          add_special_tag=add_special_tag) for x in aligned_en]
+        aligned_fr = [preprocess_sentence(x, "fr", aligned=True,
+                                          add_special_tag=add_special_tag) for x in aligned_fr]
     return aligned_en, aligned_fr
 
 
@@ -101,9 +110,8 @@ def tokenize(aligned_lang, unaligned_lang, num_words):
 
 
 def train_val_split(input_lang, output_lang):
-  from sklearn.model_selection import train_test_split
-  return train_test_split(input_lang, output_lang,
-                          test_size=train_val_split_ratio, random_state=random_seed_for_split)
+    return train_test_split(input_lang, output_lang,
+                            test_size=train_val_split_ratio, random_state=random_seed_for_split)
 
 
 def load_embeddings(emb_path):
@@ -121,6 +129,7 @@ def load_data(reverse_translate=False, add_synthetic_data=False,
     print("-- Loading Datafiles --")
     unaligned_en, unaligned_fr = dataloader_unaligned()
     aligned_en, aligned_fr = dataloader_aligned()
+    
     input_aligned_train, input_aligned_val, \
     output_aligned_train, output_aligned_val = train_val_split(aligned_en, aligned_fr)
 
@@ -157,31 +166,34 @@ def load_data(reverse_translate=False, add_synthetic_data=False,
 
     if reverse_translate:
         input_train, \
-        input_tokenizer, \
-        input_aligned_val, \
-        input_aligned_val_org, \
-        e_emb, \
-        output_train, \
-        output_tokenizer, \
-        output_aligned_val, \
-        output_aligned_val_org, \
-        d_emb = output_train, \
-                output_tokenizer, \
-                output_aligned_val, \
-                output_aligned_val_org, \
-                d_emb, \
-                input_train, \
-                input_tokenizer, \
-                input_aligned_val, \
-                input_aligned_val_org, \
-                e_emb
+         input_tokenizer, \
+         input_aligned_val, \
+         input_aligned_val_org, \
+         e_emb, \
+         output_train, \
+         output_tokenizer, \
+         output_aligned_val, \
+         output_aligned_val_org, \
+         d_emb = output_train, \
+                 output_tokenizer, \
+                 output_aligned_val, \
+                 output_aligned_val_org, \
+                 d_emb, \
+                 input_train, \
+                 input_tokenizer, \
+                 input_aligned_val, \
+                 input_aligned_val_org, \
+                 e_emb
 
     print("-- Tokenizing Validation set --")
     input_val = input_tokenizer.texts_to_sequences(input_aligned_val)
-    input_val = pad_sequences(input_val, padding='post', maxlen=input_train.shape[1])
+    input_val = pad_sequences(input_val, padding='post',
+                              maxlen=input_train.shape[1])
 
     output_val = output_tokenizer.texts_to_sequences(output_aligned_val)
-    output_val = pad_sequences(output_val, padding='post', maxlen=output_train.shape[1])
+    output_val = pad_sequences(output_val, padding='post',
+                               maxlen=output_train.shape[1])
 
-    return input_train, input_val, input_aligned_val_org, input_tokenizer, e_emb, \
-           output_train, output_val, output_aligned_val_org, output_tokenizer, d_emb
+    return input_train, input_val, input_aligned_val_org, \
+        input_tokenizer, e_emb, output_train, output_val, \
+        output_aligned_val_org, output_tokenizer, d_emb

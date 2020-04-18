@@ -23,39 +23,33 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     """
     ##### MODIFY BELOW #####
     # Warp the test_evaluation.py as a function in here
-    import numpy as np
-    import time
     import pickle
-    import tensorflow as tf
     from Transformers_Google import Transformer
     from evaluation import translate_batch
     from dataloaders_processed import load_test_generator
-    
+
     root_path = ""
 
-    transformer = Transformer(4, 256, 8, 1024, 20000, 20000, 20000, 20000, 0.1, None, None)
+    transformer = Transformer(4, 256, 8, 1024, 20000, 20000,
+                              20000, 20000, 0.1, None, None)
     transformer.load_weights(root_path+"model_weights/transformers-weights")
     print("Weights loaded in transformer")
-    
-    with open(root_path+"tokenizers/input_tokenizer.pkl", "rb" ) as f:
-        input_tokenizer = pickle.load(f)
-    
-    with open(root_path+"tokenizers/target_tokenizer.pkl", "rb" ) as f:
-        target_tokenizer = pickle.load(f)
-    
-#     input_tokenizer = pickle.load(open(root_path+"tokenizers/input_tokenizer.pkl", "rb" ))
-#     target_tokenizer = pickle.load(open(root_path+"tokenizers/target_tokenizer.pkl", "rb" ))
+
+    input_tokenizer = pickle.load(open(root_path+"tokenizers/input_tokenizer.pkl", "rb" ))
+    target_tokenizer = pickle.load(open(root_path+"tokenizers/target_tokenizer.pkl", "rb" ))
     print("Tokenizer loaded")
-    
-    batch_size = 2
-    test_dataset = load_test_generator(input_file_path, input_tokenizer, batch_size=batch_size)
+
+    batch_size = 256
+    test_dataset = load_test_generator(input_file_path,
+                                       input_tokenizer, batch_size)
     print("Test generator prepared")
 
     with open(pred_file_path, 'w', encoding='utf-8', buffering=1) as pred_file:
         for batch, inp in enumerate(test_dataset):
-#             if batch%2==0:
-            print("Evaluating for batch", batch)
-            preds = translate_batch(inp, target_tokenizer, transformer, max_length_targ=120)
+            if batch % 2 == 0:
+                print("Evaluating for batch", batch)
+            preds = translate_batch(inp, target_tokenizer,
+                                    transformer, max_length_targ=120)
             for p_fr in preds:
                 pred_file.write(p_fr.strip() + '\n')
 
