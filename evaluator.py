@@ -53,6 +53,10 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
             for p_fr in preds:
                 pred_file.write(p_fr.strip() + '\n')
 
+    # To silence exception in the end.
+    transformer = None
+    del transformer
+
     ##### MODIFY ABOVE #####
 
 
