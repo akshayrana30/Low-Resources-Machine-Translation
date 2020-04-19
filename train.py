@@ -172,9 +172,9 @@ def generate(transformer, input_tokenizer, target_tokenizer, max_length_inp, max
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("epoch", help="Number of epochs to train", default=cfg.EPOCHS)
-    parser.add_argument("generate_samples", help="Size of vocabulary", default=cfg.generate_samples)
-    parser.add_argument("seed", help="random seed", default=1234)
+    parser.add_argument("epoch", help="Number of epochs to train", default=cfg.EPOCHS, required=False)
+    parser.add_argument("generate_samples", help="Size of vocabulary", default=cfg.generate_samples, required=False)
+    parser.add_argument("seed", help="random seed", default=1234, required=False)
     args = parser.parse_args()
 
     tf.random.set_seed(args.seed)
