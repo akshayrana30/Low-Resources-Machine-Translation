@@ -7,7 +7,6 @@ from dataloaders_processed import load_data, dataloader_unaligned
 from evaluation import generate_evaluations, get_scores
 import config as cfg
 
-
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none')
 
 
@@ -15,11 +14,10 @@ def max_length(tensor):
     return max(len(t) for t in tensor)
 
 
-def load_dataset():
+def load_dataset(reverse_translate, add_synthetic_data):
     input_train, input_val, input_text_val, input_tokenizer, e_emb, target_train, target_val, target_text_val, \
     target_tokenizer, d_emb = load_data(
-        cfg.reverse_translate, cfg.add_synthetic_data, cfg.load_emb, cfg.inp_vocab_size, cfg.tar_vocab_size,
-        cfg.emb_size)
+        reverse_translate, add_synthetic_data, cfg.load_emb, cfg.inp_vocab_size, cfg.tar_vocab_size, cfg.emb_size)
 
     max_length_targ, max_length_inp = max_length(target_train), max_length(input_train)
     BUFFER_SIZE = input_train.shape[0]
@@ -74,9 +72,10 @@ def val_step(inp, tar, transformer, val_loss, val_accuracy):
     val_accuracy(tar_real, predictions)
 
 
-def train(num_epoch):
+def train(num_epoch, reverse_translate, add_synthetic_data):
     train_dataset, val_dataset, input_tokenizer, target_tokenizer, e_emb, d_emb, max_length_inp, max_length_targ, \
-    target_text_val = load_dataset()
+    target_text_val = load_dataset(
+        reverse_translate, add_synthetic_data)
     print("-- Tf Dataset created --")
 
     learning_rate = CustomSchedule(cfg.d_model)
@@ -173,7 +172,10 @@ def generate(transformer, input_tokenizer, target_tokenizer, max_length_inp, max
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--epoch", help="Number of epochs to train", default=cfg.EPOCHS)
-    parser.add_argument("--generate_samples", help="Size of vocabulary", default=cfg.generate_samples)
+    parser.add_argument("--generate_samples", type=bool, help="Size of vocabulary", default=cfg.generate_samples)
+    parser.add_argument("--reverse_translate", type=bool, help="Reverse translate to build fr-en",
+                        default=cfg.reverse_translate)
+    parser.add_argument("--add_synthetic_data", type=bool, help="Size of vocabulary", default=cfg.add_synthetic_data)
     parser.add_argument("--seed", help="random seed", default=1234)
     args = parser.parse_args()
 
@@ -181,7 +183,9 @@ if __name__ == "__main__":
     random.seed(args.seed)
 
     # Train the model using parameters in the config file.
-    transformer, input_tokenizer, target_tokenizer, max_length_inp, max_length_targ = train(args.epoch)
+    transformer, input_tokenizer, target_tokenizer, max_length_inp, max_length_targ = train(args.epoch,
+                                                                                            args.reverse_translate,
+                                                                                            args.add_synthetic_data)
     if args.generate_samples:
         # Generate Samples for back translation
         generate(transformer, input_tokenizer, target_tokenizer, max_length_inp, max_length_targ)

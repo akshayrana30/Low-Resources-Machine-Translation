@@ -35,7 +35,7 @@ num_heads = 8
 dropout_rate = 0.1
 
 # If you need to train from scratch, change this to False
-load_from_checkpoint = False
+load_from_checkpoint = True
 checkpoint_path = root_path + "engg_to_free_checkpoints/train/"
 
 if load_from_checkpoint:  # and a checkpoint exists in the path above
@@ -70,8 +70,8 @@ else:
     # This is to support English -> French model
     # X is predicted, Y is real data..
     # The below data is generated using a french to english model.
-    aligned_en_synth_path = "data/fr_en_output_EN_NEW.txt"  # Predicted English.
-    aligned_fr_synth_path = "data/fr_en_input_FR_NEW.txt"  # Original French.
+    aligned_en_synth_path = "data/synth_fr_en_output_EN.txt"  # Predicted English.
+    aligned_fr_synth_path = "data/synth_fr_en_input_FR.txt"  # Original French.
 
 # This is to generate synthetic parallel samples from monolingual data..
 # Works with both types of model to generate iterative back translation
