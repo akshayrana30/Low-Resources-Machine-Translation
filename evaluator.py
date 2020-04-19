@@ -30,26 +30,23 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
 
     root_path = "/project/cq-training-1/project2/submissions/team01/Low-Resources-Machine-Translation/"
 
-    transformer = Transformer(4, 256, 8, 1024, 20000, 20000,
-                              20000, 20000, 0.1, None, None)
-    transformer.load_weights(root_path+"model_weights/transformers-weights")
+    transformer = Transformer(4, 256, 8, 1024, 20000, 20000, 20000, 20000, 0.1, None, None)
+    transformer.load_weights(root_path + "model_weights/transformers-weights")
     print("Weights loaded in transformer")
 
-    input_tokenizer = pickle.load(open(root_path+"tokenizers/input_tokenizer.pkl", "rb" ))
-    target_tokenizer = pickle.load(open(root_path+"tokenizers/target_tokenizer.pkl", "rb" ))
+    input_tokenizer = pickle.load(open(root_path + "tokenizers/input_tokenizer.pkl", "rb"))
+    target_tokenizer = pickle.load(open(root_path + "tokenizers/target_tokenizer.pkl", "rb"))
     print("Tokenizer loaded")
 
     batch_size = 256
-    test_dataset = load_test_generator(input_file_path,
-                                       input_tokenizer, batch_size)
+    test_dataset = load_test_generator(input_file_path, input_tokenizer, batch_size)
     print("Test generator prepared")
 
     with open(pred_file_path, 'w', encoding='utf-8', buffering=1) as pred_file:
         for batch, inp in enumerate(test_dataset):
             if batch % 2 == 0:
                 print("Evaluating for batch", batch)
-            preds = translate_batch(inp, target_tokenizer,
-                                    transformer, max_length_targ=120)
+            preds = translate_batch(inp, target_tokenizer, transformer, max_length_targ=120)
             for p_fr in preds:
                 pred_file.write(p_fr.strip() + '\n')
 
@@ -68,9 +65,9 @@ def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: b
         print_all_scores: if True, will print one score per example.
     Returns: None
     """
-    out = subprocess.run(["sacrebleu", "--input", pred_file_path, target_file_path, '--tokenize',
-                          'none', '--sentence-level', '--score-only'],
-                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    out = subprocess.run(
+        ["sacrebleu", "--input", pred_file_path, target_file_path, '--tokenize', 'none', '--sentence-level',
+         '--score-only'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     # print(out)
     lines = out.stdout.split('\n')
 
@@ -85,12 +82,9 @@ def main():
     parser = argparse.ArgumentParser('script for evaluating a model.')
     parser.add_argument('--target-file-path', help='path to target (reference) file', required=True)
     parser.add_argument('--input-file-path', help='path to input file', required=True)
-    parser.add_argument('--print-all-scores', help='will print one score per sentence',
-                        action='store_true')
-    parser.add_argument('--do-not-run-model',
-                        help='will use --input-file-path as predictions, instead of running the '
-                             'model on it',
-                        action='store_true')
+    parser.add_argument('--print-all-scores', help='will print one score per sentence', action='store_true')
+    parser.add_argument('--do-not-run-model', help='will use --input-file-path as predictions, instead of running the '
+                                                   'model on it', action='store_true')
 
     args = parser.parse_args()
 

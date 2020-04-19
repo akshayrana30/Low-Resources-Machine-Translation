@@ -1,13 +1,10 @@
 import subprocess
 import time
-
 import tensorflow as tf
 from Transformers_Google import create_masks
-# from config import *
 
 
-def evaluate_batch(inp_tensor, targ_lang_tokenizer,
-                   transformer, max_length_targ):
+def evaluate_batch(inp_tensor, targ_lang_tokenizer, transformer, max_length_targ):
     # Expecting input from the val_dataset which is already tokenised.
 
     encoder_input = tf.convert_to_tensor(inp_tensor)
@@ -17,15 +14,10 @@ def evaluate_batch(inp_tensor, targ_lang_tokenizer,
 
     for i in range(max_length_targ):
 
-        enc_padding_mask, combined_mask, dec_padding_mask = create_masks(
-            encoder_input, output)
+        enc_padding_mask, combined_mask, dec_padding_mask = create_masks(encoder_input, output)
 
         # predictions.shape == (batch_size, seq_len, vocab_size)
-        predictions, attention_weights = transformer(encoder_input,
-                                                     output,
-                                                     False,
-                                                     enc_padding_mask,
-                                                     combined_mask,
+        predictions, attention_weights = transformer(encoder_input, output, False, enc_padding_mask, combined_mask,
                                                      dec_padding_mask)
 
         # select the last word from the seq_len dimension
@@ -45,8 +37,7 @@ def evaluate_batch(inp_tensor, targ_lang_tokenizer,
 
 
 def translate_batch(inp, targ_lang_tokenizer, transformer, max_length_targ):
-    output, _ = evaluate_batch(inp, targ_lang_tokenizer,
-                               transformer, max_length_targ)
+    output, _ = evaluate_batch(inp, targ_lang_tokenizer, transformer, max_length_targ)
     pred_sentences = targ_lang_tokenizer.sequences_to_texts(output.numpy())
     pred_sentences = [x.split("<end>")[0].replace("<start>", "").strip() for x in pred_sentences]
     return pred_sentences
@@ -60,9 +51,9 @@ def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: b
         print_all_scores: if True, will print one score per example.
     Returns: None
     """
-    out = subprocess.run(["sacrebleu", "--input", pred_file_path, target_file_path, '--tokenize',
-                          'none', '--sentence-level', '--score-only'],
-                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    out = subprocess.run(
+        ["sacrebleu", "--input", pred_file_path, target_file_path, '--tokenize', 'none', '--sentence-level',
+         '--score-only'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     lines = out.stdout.split(b'\n')
 
     if print_all_scores:
@@ -73,8 +64,8 @@ def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: b
     return sum(scores) / len(scores)
 
 
-def get_scores(gold_file_path, pred_file_path, target_tokenizer,
-               val_dataset, target_text_val, transformer, max_length_targ):
+def get_scores(gold_file_path, pred_file_path, target_tokenizer, val_dataset, target_text_val, transformer,
+               max_length_targ):
     new_start = time.time()
     print("--Saving files to get Bleu Scores--")
     index = 0
@@ -98,16 +89,14 @@ def get_scores(gold_file_path, pred_file_path, target_tokenizer,
     print("-------------")
 
 
-def generate_evaluations(transformer, input_path, output_path,
-                         dataset, inp_lang_tokenizer,
-                         targ_lang_tokenizer, max_length_targ):
-    with open(input_path, 'w', encoding='utf-8', buffering=1) as i_file, \
-         open(output_path, 'w', encoding='utf-8', buffering=1) as o_file:
+def generate_evaluations(transformer, input_path, output_path, dataset, inp_lang_tokenizer, targ_lang_tokenizer,
+                         max_length_targ):
+    with open(input_path, 'w', encoding='utf-8', buffering=1) as i_file, open(output_path, 'w', encoding='utf-8',
+                                                                              buffering=1) as o_file:
         for batch, inp in enumerate(dataset):
             if batch % 50 == 0:
                 print("Generating for batch", batch)
-            predicted = translate_batch(inp, targ_lang_tokenizer,
-                                        transformer, max_length_targ)
+            predicted = translate_batch(inp, targ_lang_tokenizer, transformer, max_length_targ)
             converted_token_to_text = [x.split("<end>")[0].replace("<start>", "").strip() for x in
                                        inp_lang_tokenizer.sequences_to_texts(inp.numpy())]
             for g_fr, p_fr in zip(converted_token_to_text, predicted):

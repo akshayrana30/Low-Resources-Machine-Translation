@@ -14,7 +14,6 @@ emb_size = 256
 train_batch_size = 128
 val_batch_size = 128
 
-
 train_val_split_ratio = 0.1
 random_seed_for_split = 1234
 
@@ -35,7 +34,7 @@ dropout_rate = 0.1
 
 # If you need to train from scratch, change this to False
 load_from_checkpoint = False
-checkpoint_path = root_path+"engg_to_free_checkpoints/train/"
+checkpoint_path = root_path + "engg_to_free_checkpoints/train/"
 
 if load_from_checkpoint:  # and a checkpoint exists in the path above
     # Train for few epoch if already loading from checkpoint
@@ -69,7 +68,7 @@ else:
     # This is to support English -> French model
     # X is predicted, Y is real data..
     # The below data is generated using a french to english model.
-    aligned_en_synth_path = "fr_en_output_EN_NEW.txt" # Predicted English.
+    aligned_en_synth_path = "fr_en_output_EN_NEW.txt"  # Predicted English.
     aligned_fr_synth_path = "fr_en_input_FR_NEW.txt"  # Original French.
 
 # This is to generate synthetic parallel samples from monolingual data..
