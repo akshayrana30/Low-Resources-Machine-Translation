@@ -28,7 +28,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     from evaluation import translate_batch
     from dataloaders_processed import load_test_generator
 
-    root_path = ""
+    root_path = "/project/cq-training-1/project2/submissions/team01/Low-Resources-Machine-Translation/"
 
     transformer = Transformer(4, 256, 8, 1024, 20000, 20000,
                               20000, 20000, 0.1, None, None)
