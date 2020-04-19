@@ -1,5 +1,7 @@
-root_path = "/content/drive/My Drive/NMT/"
+# root_path = "/content/drive/My Drive/NMT/"
 # root_path = "/Users/akshayrana/Documents/Github/Low-Resources-Machine-Translation/Akshay/data/"
+root_path = "/project/cq-training-1/project2/submissions/team01/Low-Resources-Machine-Translation"
+
 unaligned_en_path = "unaligned.en"
 unaligned_fr_path = "unaligned.fr"
 aligned_en_path = "train.lang1"
