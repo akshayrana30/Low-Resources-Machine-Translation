@@ -27,8 +27,8 @@ if emb_size == 128 or emb_size == 256:
 else:
     load_emb = False
 
-emb_path_en = "emb_en_" + str(emb_size) + "_20k.pkl"
-emb_path_fr = "emb_fr_" + str(emb_size) + "_20k.pkl"
+emb_path_en = "data/emb_en_" + str(emb_size) + "_20k.pkl"
+emb_path_fr = "data/emb_fr_" + str(emb_size) + "_20k.pkl"
 
 # Transformers parameters
 num_layers = 4
