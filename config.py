@@ -1,11 +1,11 @@
 # root_path = "/content/drive/My Drive/NMT/"
 # root_path = "/Users/akshayrana/Documents/Github/Low-Resources-Machine-Translation/Akshay/data/"
-root_path = "/project/cq-training-1/project2/submissions/team01/Low-Resources-Machine-Translation"
+root_path = "/project/cq-training-1/project2/submissions/team01/Low-Resources-Machine-Translation/"
 
-unaligned_en_path = "unaligned.en"
-unaligned_fr_path = "unaligned.fr"
-aligned_en_path = "train.lang1"
-aligned_fr_path = "train.lang2"
+unaligned_en_path = "data/unaligned.en"
+unaligned_fr_path = "data/unaligned.fr"
+aligned_en_path = "data/train.lang1"
+aligned_fr_path = "data/train.lang2"
 
 # Most frequent words will be chosen.
 inp_vocab_size = 20000
@@ -64,14 +64,14 @@ if reverse_translate:
     # This is to support French -> English model
     # X is predicted, Y is real data..
     # The below data is generated using a english to french model.
-    aligned_en_synth_path = "synth_en_fr_input_EN.txt"  # Original English.
-    aligned_fr_synth_path = "synth_en_fr_output_FR.txt"  # Predicted French.
+    aligned_en_synth_path = "data/synth_en_fr_input_EN.txt"  # Original English.
+    aligned_fr_synth_path = "data/synth_en_fr_output_FR.txt"  # Predicted French.
 else:
     # This is to support English -> French model
     # X is predicted, Y is real data..
     # The below data is generated using a french to english model.
-    aligned_en_synth_path = "fr_en_output_EN_NEW.txt"  # Predicted English.
-    aligned_fr_synth_path = "fr_en_input_FR_NEW.txt"  # Original French.
+    aligned_en_synth_path = "data/fr_en_output_EN_NEW.txt"  # Predicted English.
+    aligned_fr_synth_path = "data/fr_en_input_FR_NEW.txt"  # Original French.
 
 # This is to generate synthetic parallel samples from monolingual data..
 # Works with both types of model to generate iterative back translation
@@ -80,9 +80,9 @@ number_of_samples = 60000
 
 if reverse_translate:
     # French -> English model will generate English sentences from French monolingual.
-    generate_input_path = root_path + "fr_en_input_FR_NEW.txt"
-    generate_output_path = root_path + "fr_en_output_EN_NEW.txt"
+    generate_input_path = root_path + "data/fr_en_input_FR_NEW.txt"
+    generate_output_path = root_path + "data/fr_en_output_EN_NEW.txt"
 else:
     # English -> French model will generate French sentences from English monolingual.
-    generate_input_path = root_path + "en_fr_input_EN.txt"
-    generate_output_path = root_path + "en_fr_output_FR.txt"
+    generate_input_path = root_path + "data/en_fr_input_EN.txt"
+    generate_output_path = root_path + "data/en_fr_output_FR.txt"
