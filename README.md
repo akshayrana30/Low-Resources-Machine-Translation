@@ -17,7 +17,7 @@ python train.py --epoch=10 reverse_translate=True generate_samples=True --seed=1
 python train.py --epoch=10 add_synthetic_data=True --seed=1234  
 ```
 
-Configure config.py for more control over all parameters. 
+__Configure config.py for more control over all parameters and paths.__ 
 
 
 **Steps for the evaluation:**
