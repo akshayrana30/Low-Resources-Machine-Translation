@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Tensorflow2-Neural-Machine-Translation.iml" filepath="$PROJECT_DIR$/.idea/Tensorflow2-Neural-Machine-Translation.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Low-Resources-Machine-Translation.iml" filepath="$PROJECT_DIR$/.idea/Low-Resources-Machine-Translation.iml" />
     </modules>
   </component>
 </project>
