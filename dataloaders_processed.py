@@ -4,10 +4,9 @@ import re
 import tensorflow as tf
 import numpy as np
 import unicodedata
+import config as cfg
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
-from config import (root_path, train_val_split_ratio, random_seed_for_split, unaligned_en_path, unaligned_fr_path,
-                    aligned_en_synth_path, aligned_fr_synth_path, aligned_en_path, aligned_fr_path)
 
 
 def unicode_to_ascii(s):
@@ -38,7 +37,7 @@ def preprocess_sentence(w, lang, aligned=True, add_special_tag=True):
 
 
 def load_lang(lang_path):
-    return io.open(root_path + lang_path, encoding='UTF-8').read().strip().split('\n')
+    return io.open(cfg.root_path + lang_path, encoding='UTF-8').read().strip().split('\n')
 
 
 def load_test_generator(lang_path, input_tokenizer, batch_size):
@@ -51,8 +50,8 @@ def load_test_generator(lang_path, input_tokenizer, batch_size):
 
 
 def dataloader_unaligned(preprocess=True):
-    unaligned_en = load_lang(unaligned_en_path)
-    unaligned_fr = load_lang(unaligned_fr_path)
+    unaligned_en = load_lang(cfg.unaligned_en_path)
+    unaligned_fr = load_lang(cfg.unaligned_fr_path)
     if preprocess:
         unaligned_en = [preprocess_sentence(x, "en", aligned=False) for x in unaligned_en]
         unaligned_fr = [preprocess_sentence(x, "fr", aligned=False) for x in unaligned_fr]
@@ -60,8 +59,8 @@ def dataloader_unaligned(preprocess=True):
 
 
 def dataloader_aligned(preprocess=True, add_special_tag=True):
-    aligned_en = load_lang(aligned_en_path)
-    aligned_fr = load_lang(aligned_fr_path)
+    aligned_en = load_lang(cfg.aligned_en_path)
+    aligned_fr = load_lang(cfg.aligned_fr_path)
     if preprocess:
         aligned_en = [preprocess_sentence(x, "en", aligned=True, add_special_tag=add_special_tag) for x in aligned_en]
         aligned_fr = [preprocess_sentence(x, "fr", aligned=True, add_special_tag=add_special_tag) for x in aligned_fr]
@@ -70,15 +69,15 @@ def dataloader_aligned(preprocess=True, add_special_tag=True):
 
 def dataloader_aligned_synthetic():
     try:
-        aligned_en = load_lang(aligned_en_synth_path)
-        aligned_fr = load_lang(aligned_fr_synth_path)
+        aligned_en = load_lang(cfg.aligned_en_synth_path)
+        aligned_fr = load_lang(cfg.aligned_fr_synth_path)
+        aligned_en = [preprocess_sentence(x, "en", aligned=True) for x in aligned_en]
+        aligned_fr = [preprocess_sentence(x, "fr", aligned=True) for x in aligned_fr]
+        return aligned_en, aligned_fr
     except Exception as e:
         print(e)
         print("No synthetic data present.")
 
-    aligned_en = [preprocess_sentence(x, "en", aligned=True) for x in aligned_en]
-    aligned_fr = [preprocess_sentence(x, "fr", aligned=True) for x in aligned_fr]
-    return aligned_en, aligned_fr
 
 
 def tokenize(aligned_lang, unaligned_lang, num_words):
@@ -90,13 +89,13 @@ def tokenize(aligned_lang, unaligned_lang, num_words):
 
 
 def train_val_split(input_lang, output_lang):
-    return train_test_split(input_lang, output_lang, test_size=train_val_split_ratio,
-                            random_state=random_seed_for_split)
+    return train_test_split(input_lang, output_lang, test_size=cfg.train_val_split_ratio,
+                            random_state=cfg.random_seed_for_split)
 
 
 def load_embeddings(emb_path):
     try:
-        with open(root_path + emb_path, "rb") as f:
+        with open(cfg.root_path + emb_path, "rb") as f:
             emb = pickle.load(f)
         return emb
     except:

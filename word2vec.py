@@ -1,5 +1,6 @@
 from dataloaders_processed import *
 from gensim.models import Word2Vec
+import argparse
 
 
 def train_model(emb_dim, data):
@@ -26,9 +27,14 @@ def save_emb(emb, path):
 
 
 if __name__ == "__main__":
-    lang = "en"
-    emb_dim = 128
-    vocab_size = 20000
+    parser = argparse.ArgumentParser()
+    parser.add_argument("lang", type=str, help="language to train for ex: \"en\", \"fr\" ", default="en")
+    parser.add_argument("emb_dim", help="Embedding Dimension", default=256)
+    parser.add_argument("vocab_size", help="Size of vocabulary", default=20000)
+    args = parser.parse_args()
+    lang = args.lang
+    emb_dim = args.emb_dim
+    vocab_size = args.vocab_size
     _, _, _, input_tokenizer, _, _, _, _, target_tokenizer, _ = load_data(False, False, False, vocab_size, vocab_size,
                                                                           emb_dim)
 
@@ -37,10 +43,10 @@ if __name__ == "__main__":
 
     if lang == "en":
         data = a_en + ua_en
-        path = root_path + "tempemb_en" + str(emb_dim) + "_20k.pkl"
+        path = cfg.root_path + "emb_en" + str(emb_dim) + "_20k.pkl"
     else:
         data = a_fr + ua_fr
-        path = root_path + "tempemb_fr" + str(emb_dim) + "_20k.pkl"
+        path = cfg.root_path + "emb_fr" + str(emb_dim) + "_20k.pkl"
 
     model = train_model(emb_dim, data)
     word_vectors = model.wv
