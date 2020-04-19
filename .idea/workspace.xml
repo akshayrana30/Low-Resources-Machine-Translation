@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="1d163dbf-907e-4f44-a5a4-04884119d47f" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/Tensorflow2-Neural-Machine-Translation.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/.vscode/launch.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/Transformers_Google.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/config.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/emb_en_256.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/emb_en_256_20k.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/emb_fr_256.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/emb_fr_256_20k.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/synth_en_fr_input_EN.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/synth_en_fr_output_FR.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/synth_fr_en_input_FR.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/synth_fr_en_output_EN.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/train.lang1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/train.lang2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/unaligned.en" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/data/unaligned.fr" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/dataloaders_processed.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/evaluation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/evaluator.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/experiment_notebooks/Transformers_Google.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/experiment_notebooks/Transformers_Google_BERT.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/experiment_notebooks/WordVec.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/model_weights/checkpoint" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/model_weights/transformers-weights.data-00000-of-00002" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/model_weights/transformers-weights.data-00001-of-00002" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/model_weights/transformers-weights.index" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/notebooks/WordVec.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/tokenizers/input_tokenizer.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/tokenizers/target_tokenizer.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/train.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Akshay/word2vec.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/.ipynb_checkpoints/Analysis-checkpoint.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/Analysis.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/corpus/processed.en/unaligned.en" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/corpus/tokenized.fr/unaligned.fr" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/dataloaders.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/pairs/train.lang1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/pairs/train.lang2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/pairs/val.lang1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/pairs/val.lang2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed/train.lang1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed/train.lang2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed/unaligned.en" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed/unaligned.fr" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/definition.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/eval_cfg.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/evaluator.py" beforeDir="false" afterPath="$PROJECT_DIR$/evaluator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/final_checkpoints/placeholder" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/final_tokenizer/placeholder" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/generate_synthetic.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/Transformer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/google_transformer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/mBART.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/create_combined_corpus.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/punctuation_remover.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/tokenizer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pretrain_mBART.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/test_dataloader_pairs.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/test_mBART_pairs.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/test_transformer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/train_Backtranslation_ENFR.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/train_backtranslation_FREN.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/train_google_Transformer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/translate.py" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1akc8qEe7pjszI43nvPWbk0eTCs" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="1d163dbf-907e-4f44-a5a4-04884119d47f" name="Default Changelist" comment="" />
+      <created>1587282875839</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1587282875839</updated>
+    </task>
+    <servers />
+  </component>
+</project>

@@ -21,77 +21,39 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
         pred_file_path: the file path where to store the predictions.
     Returns: None
     """
-    # ---------------------------------------------------------------------
-    # Include essential module for evaluation
-    import os
-    import json
+    ##### MODIFY BELOW #####
+    # Warp the test_evaluation.py as a function in here
     import pickle
-    import time
-    import tensorflow as tf
-    from data.dataloaders import prepare_training_pairs, prepare_test
-    from models import Transformer
-    from translate import translate_batch
-    from definition import ROOT_DIR
-    CONFIG = "eval_cfg.json"
-    # ---------------------------------------------------------------------
-    # Load setting in json file
+    from Transformers_Google import Transformer
+    from evaluation import translate_batch
+    from dataloaders_processed import load_test_generator
 
-    with open(os.path.join(ROOT_DIR, CONFIG)) as f:
-        para = json.load(f)
-    batch_size = para["batch_size"]
-    source = para["src"]
-    target = para["tar"]
-    ckpt_dir = para["ckpt"]
+    root_path = ""
 
-    # ---------------------------------------------------------------------
-    # Create test dataloader from input file (tokenized and map to sequence)
+    transformer = Transformer(4, 256, 8, 1024, 20000, 20000,
+                              20000, 20000, 0.1, None, None)
+    transformer.load_weights(root_path+"model_weights/transformers-weights")
+    print("Weights loaded in transformer")
 
-    # Todo: The final training and target tokenizer is needed, so as to use the same tokenizer on test data,
-    #  because we didn't build a dictionary file.
-    f_src = open(source, 'rb')
-    f_tar = open(target, 'rb')
-    src_tokenizer = pickle.load(f_src)
-    tar_tokenizer = pickle.load(f_tar)
+    input_tokenizer = pickle.load(open(root_path+"tokenizers/input_tokenizer.pkl", "rb" ))
+    target_tokenizer = pickle.load(open(root_path+"tokenizers/target_tokenizer.pkl", "rb" ))
+    print("Tokenizer loaded")
 
-    test_dataset, test_max_length = prepare_test(input_file_path,
-                                                 src_tokenizer,
-                                                 batch_size=batch_size)
-    # calculate vocabulary size
-    src_vocsize = len(src_tokenizer.word_index) + 1
-    tar_vocsize = len(tar_tokenizer.word_index) + 1
-    # ---------------------------------------------------------------------
-    # Create the instance of model to load checkpoints
-    # Todo: Define the model that fit the checkpoints you want to load
-    optimizer = tf.keras.optimizers.Adam()
-    model = Transformer.Transformer(voc_size_src=src_vocsize,
-                                    voc_size_tar=tar_vocsize,
-                                    max_pe=10000,
-                                    num_encoders=4,
-                                    num_decoders=4,
-                                    emb_size=512,
-                                    num_head=8,
-                                    ff_inner=1024)
+    batch_size = 256
+    test_dataset = load_test_generator(input_file_path,
+                                       input_tokenizer, batch_size)
+    print("Test generator prepared")
 
-    # ---------------------------------------------------------------------
-    # Load CheckPoint
-    checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
-    status = checkpoint.restore(tf.train.latest_checkpoint(ckpt_dir))
-    # check if loading is successful
-    status.assert_existing_objects_matched()
+    with open(pred_file_path, 'w', encoding='utf-8', buffering=1) as pred_file:
+        for batch, inp in enumerate(test_dataset):
+            if batch % 2 == 0:
+                print("Evaluating for batch", batch)
+            preds = translate_batch(inp, target_tokenizer,
+                                    transformer, max_length_targ=120)
+            for p_fr in preds:
+                pred_file.write(p_fr.strip() + '\n')
 
-    # ---------------------------------------------------------------------
-    # Use Greedy Search to generate prediction and write to pred_file_path
-    start = time.time()
-    with open(pred_file_path, 'w', encoding='utf-8') as pred_file:
-        for (batch, (inp)) in enumerate(test_dataset):
-            if batch % 5 == 0:
-                print("Evaluating Batch: %s" % batch)
-            batch_size = tf.shape(inp)[0].numpy()
-            translation = translate_batch(model, inp, batch_size, tar_tokenizer)
-            for sentence in translation:
-                pred_file.write(sentence.strip() + '\n')
-    end = time.time()
-    print("Translation finish in %s s" % (end - start))
+    ##### MODIFY ABOVE #####
 
 
 def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: bool):
@@ -105,6 +67,7 @@ def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: b
     out = subprocess.run(["sacrebleu", "--input", pred_file_path, target_file_path, '--tokenize',
                           'none', '--sentence-level', '--score-only'],
                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    print(out)
     lines = out.stdout.split('\n')
 
     if print_all_scores:
