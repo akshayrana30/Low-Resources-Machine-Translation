@@ -24,16 +24,30 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     ##### MODIFY BELOW #####
     # Warp the test_evaluation.py as a function in here
     import pickle
-    from Transformers_Google import Transformer
+    import tensorflow as tf
+    from Transformers_Google import Transformer, CustomSchedule
     from evaluation import translate_batch
+    from  config import d_model
     from dataloaders_processed import load_test_generator
 
     root_path = ""
 
     transformer = Transformer(4, 256, 8, 1024, 20000, 20000,
                               20000, 20000, 0.1, None, None)
-    transformer.load_weights(root_path+"model_weights/transformers-weights")
-    print("Weights loaded in transformer")
+    # transformer.load_weights(root_path+"model_weights/transformers-weights")
+    # print("Weights loaded in transformer")
+    learning_rate = CustomSchedule(d_model)
+    optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9,
+                                         beta_2=0.98, epsilon=1e-9)
+
+    ckpt = tf.train.Checkpoint(transformer=transformer,
+                               optimizer=optimizer)
+
+    ckpt_manager = tf.train.CheckpointManager(ckpt, root_path+"model_weights/", max_to_keep=3)
+    # if a checkpoint exists, restore the latest checkpoint.
+    if ckpt_manager.latest_checkpoint:
+        ckpt.restore(ckpt_manager.latest_checkpoint)
+        print('Latest checkpoint restored!!')
 
     input_tokenizer = pickle.load(open(root_path+"tokenizers/input_tokenizer.pkl", "rb" ))
     target_tokenizer = pickle.load(open(root_path+"tokenizers/target_tokenizer.pkl", "rb" ))
