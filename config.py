@@ -13,8 +13,8 @@ tar_vocab_size = 20000
 
 # While keeping an embedding of 128 or 256, the batch size can be increased upto 128. 
 emb_size = 256
-train_batch_size = 128
-val_batch_size = 128
+train_batch_size = 64
+val_batch_size = 64
 
 train_val_split_ratio = 0.1
 random_seed_for_split = 1234
