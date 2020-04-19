@@ -27,22 +27,15 @@ if emb_size == 128 or emb_size == 256:
 else:
     load_emb = False
 
+emb_path_en = "emb_en_" + str(emb_size) + "_20k.pkl"
+emb_path_fr = "emb_en_" + str(emb_size) + "_20k.pkl"
+
 # Transformers parameters
 num_layers = 4
 d_model = 256
 dff = 1024
 num_heads = 8
 dropout_rate = 0.1
-
-# If you need to train from scratch, change this to False
-load_from_checkpoint = True
-checkpoint_path = root_path + "engg_to_free_checkpoints/train/"
-
-if load_from_checkpoint:  # and a checkpoint exists in the path above
-    # Train for few epoch if already loading from checkpoint
-    EPOCHS = 16
-else:
-    EPOCHS = 16
 
 # Save checkpoint after these many epochs 
 save_every = 4
@@ -57,7 +50,21 @@ evaluate_bleu_every = 2
 # Model can be used to generate synthetic samples from monolinguals
 reverse_translate = False
 
-# This will add synthetic data loaded at "aligned_en_synth_path" 
+# If you need to train from scratch, change this to False
+load_from_checkpoint = True
+
+if reverse_translate:
+    checkpoint_path = root_path + "en_to_fr_checkpoints/train/"
+else:
+    checkpoint_path = root_path + "fr_to_en_checkpoints/train/"
+
+if load_from_checkpoint:  # and a checkpoint exists in the path above
+    # Train for few epoch if already loading from checkpoint
+    EPOCHS = 16
+else:
+    EPOCHS = 16
+
+# This will add synthetic data loaded at "aligned_en_synth_path"
 add_synthetic_data = True
 
 if reverse_translate:

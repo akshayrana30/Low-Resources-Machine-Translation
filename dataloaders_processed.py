@@ -79,7 +79,6 @@ def dataloader_aligned_synthetic():
         print("No synthetic data present.")
 
 
-
 def tokenize(aligned_lang, unaligned_lang, num_words):
     lang_tokenizer = tf.keras.preprocessing.text.Tokenizer(filters=' ', lower=False, num_words=num_words)
     lang_tokenizer.fit_on_texts(aligned_lang + unaligned_lang)
@@ -135,8 +134,8 @@ def load_data(reverse_translate=False, add_synthetic_data=False, load_emb=False,
 
     if load_emb:
         print("-- Loading embedding --")
-        e_emb = load_embeddings("emb_en_" + str(emb_size) + "_20k.pkl")
-        d_emb = load_embeddings("emb_fr_" + str(emb_size) + "_20k.pkl")
+        e_emb = load_embeddings(cfg.emb_path_en)
+        d_emb = load_embeddings(cfg.emb_path_fr)
     else:
         print("-- Skipping embeddings --")
         e_emb, d_emb = None, None
