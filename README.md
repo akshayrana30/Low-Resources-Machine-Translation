@@ -17,6 +17,11 @@ python train.py --epoch=10 reverse_translate=True generate_samples=True --seed=1
 python train.py --epoch=10 add_synthetic_data=True --seed=1234  
 ```
 
+4. To create your own word_embeddings. 
+```
+python word2vec.py lang=en emb_dim=256 vocab_size=20000  
+```
+
 __Configure config.py for more control over all parameters and paths.__ 
 
 
