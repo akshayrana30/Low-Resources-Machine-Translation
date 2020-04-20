@@ -1,6 +1,8 @@
-from dataloaders_processed import *
+from dataloaders_processed import load_data, dataloader_aligned, dataloader_unaligned
 from gensim.models import Word2Vec
 import argparse
+import numpy as np
+import config as cfg
 
 
 def train_model(emb_dim, data):
@@ -43,10 +45,10 @@ if __name__ == "__main__":
 
     if lang == "en":
         data = a_en + ua_en
-        path = cfg.root_path + "emb_en" + str(emb_dim) + "_20k.pkl"
+        path = cfg.root_path + cfg.emb_path_en
     else:
         data = a_fr + ua_fr
-        path = cfg.root_path + "emb_fr" + str(emb_dim) + "_20k.pkl"
+        path = cfg.root_path + cfg.emb_path_fr
 
     model = train_model(emb_dim, data)
     word_vectors = model.wv
