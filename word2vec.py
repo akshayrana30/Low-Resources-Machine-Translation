@@ -31,8 +31,8 @@ def save_emb(emb, path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("lang", type=str, help="language to train for ex: \"en\", \"fr\" ", default="en")
-    parser.add_argument("emb_dim", help="Embedding Dimension", default=256)
-    parser.add_argument("vocab_size", help="Size of vocabulary", default=20000)
+    parser.add_argument("emb_dim", type=int, help="Embedding Dimension", default=256)
+    parser.add_argument("vocab_size", type=int, help="Size of vocabulary", default=20000)
     args = parser.parse_args()
     lang = args.lang
     emb_dim = args.emb_dim
